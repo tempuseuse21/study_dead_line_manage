@@ -1,0 +1,6 @@
+{
+  "name": "StudySync",
+  "description": "A full-stack academic task, assignment deadline, and curriculum workload management platform for MSc IT and college students.",
+  "requestFramePermissions": ["notifications"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

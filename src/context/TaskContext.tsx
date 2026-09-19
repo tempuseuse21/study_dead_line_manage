@@ -244,11 +244,36 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => { storage.set(StorageKeys.PREFERENCES, preferences); }, [preferences]);
   useEffect(() => { storage.set(StorageKeys.STUDY_PREFS, studyPreferences); }, [studyPreferences]);
 
-  // Live ticker every 10s
+  // Live ticker every 10s & Auto-shift overdue tasks to Completed section
   useEffect(() => {
     const interval = setInterval(() => setTicker(prev => prev + 1), 10000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const now = Date.now();
+    setTasks(prev => {
+      let hasChanges = false;
+      const updated = prev.map(t => {
+        if (t.status !== 'completed') {
+          const [h, m] = (t.dueTime || '23:59').split(':').map(Number);
+          const [y, mon, d] = t.dueDate.split('-').map(Number);
+          const taskTime = new Date(y, mon - 1, d, h || 23, m || 59).getTime();
+          if (taskTime < now) {
+            hasChanges = true;
+            return {
+              ...t,
+              status: 'completed' as TaskStatus,
+              progress: 100,
+              completedAt: t.completedAt || new Date().toISOString()
+            };
+          }
+        }
+        return t;
+      });
+      return hasChanges ? updated : prev;
+    });
+  }, [ticker]);
 
   // Broadcast events (multi-tab)
   useEffect(() => {
@@ -605,22 +630,34 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     const isNowCompleted = task.status !== 'completed';
-    const newStatus: TaskStatus = isNowCompleted ? 'completed' : 'not_started';
+    const newStatus: TaskStatus = isNowCompleted ? 'completed' : 'in_progress';
+    const todayStr = getTodayStr();
+
+    const [h, m] = (task.dueTime || '23:59').split(':').map(Number);
+    const [y, mon, d] = task.dueDate.split('-').map(Number);
+    const taskTime = new Date(y, mon - 1, d, h || 23, m || 59).getTime();
+    const isOverdue = taskTime < Date.now();
+
     const updatedSubtasks = task.subtasks.map(st => ({
       ...st,
       completed: isNowCompleted,
       completedAt: isNowCompleted ? new Date().toISOString() : undefined
     }));
+
     await updateTask(taskId, {
       status: newStatus,
       progress: isNowCompleted ? 100 : 0,
       completedAt: isNowCompleted ? new Date().toISOString() : undefined,
+      dueDate: (!isNowCompleted && isOverdue) ? todayStr : task.dueDate,
       subtasks: updatedSubtasks
     });
+
     if (isNowCompleted) {
       triggerCompletionConfetti();
       playNotificationChime();
       logActivity('completed task', task.title, 'task', task.id);
+    } else {
+      logActivity('re-opened task', task.title, 'task', task.id);
     }
   };
 

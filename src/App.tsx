@@ -79,14 +79,14 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen bg-bg dark:bg-ink text-ink dark:text-bg flex flex-col font-sans transition-colors">
       <Navbar onNavigate={setActiveView} activeView={activeView} />
       
-      <div className="flex-1 grid lg:grid-cols-[280px_1fr_280px] w-full items-stretch">
+      <div className="flex-1 grid lg:grid-cols-[240px_1fr] xl:grid-cols-[260px_1fr_320px] w-full items-stretch">
         <Sidebar activeView={activeView} onNavigate={setActiveView} />
         
-        <main className="p-8 overflow-y-auto pb-24 lg:pb-8 flex flex-col gap-12">
+        <main className="p-4 sm:p-6 lg:p-8 overflow-y-auto pb-24 lg:pb-8 flex flex-col gap-8 min-w-0">
           {renderActiveView()}
         </main>
 
-        <RightPanel />
+        <RightPanel onNavigate={setActiveView} />
       </div>
 
       <MobileNav activeView={activeView} onNavigate={setActiveView} />

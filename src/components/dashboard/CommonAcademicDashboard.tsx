@@ -313,14 +313,6 @@ export const CommonAcademicDashboard: React.FC<CommonAcademicDashboardProps> = (
                 <div>
                   Due: <strong className="text-white">{formatDateDisplay(nextDeadlineTask.dueDate)} at {nextDeadlineTask.dueTime}</strong>
                 </div>
-                {nextDeadlineTask.subtasks && nextDeadlineTask.subtasks.length > 0 && (
-                  <>
-                    <span>•</span>
-                    <div>
-                      Subtasks: <strong className="text-white">{nextDeadlineTask.subtasks.filter(s => s.completed).length}/{nextDeadlineTask.subtasks.length}</strong>
-                    </div>
-                  </>
-                )}
               </div>
             </div>
 

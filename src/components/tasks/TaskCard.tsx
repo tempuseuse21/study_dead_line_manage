@@ -5,7 +5,6 @@ import {
   Paperclip,
   AlertCircle,
   Repeat,
-  Layers,
   Pin,
   ShieldCheck,
   Calendar,
@@ -30,7 +29,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, compact = false }) => 
   const subject = subjects.find(s => s.id === task.subjectId);
   const priorityInfo = getPriorityBadge(task.priority);
   const countdown = formatLiveCountdown(task.dueDate, task.dueTime, false);
-  const totalSubtasks = task.subtasks?.length || 0;
   const hasIncompleteDependencies = task.dependencies?.some(d => !d.isCompleted);
 
   const getSubjectIcon = (code?: string) => {
@@ -133,24 +131,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, compact = false }) => 
         </div>
       )}
 
-      {/* Progress & Subtasks */}
-      {totalSubtasks > 0 && (
-        <div className="mb-3">
-          <div className="flex items-center justify-between text-xs text-[var(--text-muted)] mb-1">
-            <span className="flex items-center gap-1 font-mono text-[0.65rem]">
-              <Layers className="w-3 h-3" />
-              {totalSubtasks} Subtask{totalSubtasks === 1 ? '' : 's'}
-            </span>
-            <span className="font-mono text-[0.65rem]">{task.progress}%</span>
-          </div>
-          <div className="w-full h-1.5 rounded-full bg-[var(--bg-card-subtle)] overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300"
-              style={{ width: `${task.progress}%` }}
-            />
-          </div>
-        </div>
-      )}
+
 
       {/* Card Footer */}
       <div className="mt-auto flex items-center justify-between gap-2 pt-3 border-t border-[var(--border-subtle)] text-xs">

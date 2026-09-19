@@ -38,11 +38,6 @@ export const TaskFormModal: React.FC = () => {
   const [dueTime, setDueTime] = useState('23:59');
   const [priority, setPriority] = useState<Priority>('high');
   const [tagInput, setTagInput] = useState('Assignment');
-  const [subtasks, setSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>([
-    { id: 'st_1', title: 'Review lecture notes & requirements', completed: false },
-    { id: 'st_2', title: 'Draft solution & verify with rubric', completed: false }
-  ]);
-  const [newSubtask, setNewSubtask] = useState('');
 
   // Announcement form state (CR)
   const [annTitle, setAnnTitle] = useState('');
@@ -57,16 +52,6 @@ export const TaskFormModal: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isCreateTaskModalOpen) return null;
-
-  const handleAddSubtask = () => {
-    if (!newSubtask.trim()) return;
-    setSubtasks([...subtasks, { id: `st_${Date.now()}`, title: newSubtask.trim(), completed: false }]);
-    setNewSubtask('');
-  };
-
-  const handleRemoveSubtask = (id: string) => {
-    setSubtasks(subtasks.filter(s => s.id !== id));
-  };
 
   const handleSubmitTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +75,7 @@ export const TaskFormModal: React.FC = () => {
         status: 'not_started',
         progress: 0,
         tags: tags.length > 0 ? tags : ['Academic'],
-        subtasks,
+        subtasks: [],
         assignedToIds: ['all'],
         createdById: 'student',
         createdByName: 'Student'
@@ -98,7 +83,6 @@ export const TaskFormModal: React.FC = () => {
 
       setTitle('');
       setDescription('');
-      setNewSubtask('');
       setIsCreateTaskModalOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -279,54 +263,6 @@ export const TaskFormModal: React.FC = () => {
                 onChange={e => setDescription(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs sm:text-sm text-[var(--text-main)] focus:border-indigo-500 focus:outline-none resize-none"
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
-                Subtasks & Milestones ({subtasks.length})
-              </label>
-              <div className="space-y-1.5 mb-2 max-h-32 overflow-y-auto">
-                {subtasks.map((st, idx) => (
-                  <div
-                    key={st.id}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs"
-                  >
-                    <span className="text-[var(--text-main)] truncate font-medium">
-                      {idx + 1}. {st.title}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSubtask(st.id)}
-                      className="text-[var(--text-muted)] hover:text-rose-500 p-1 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Add milestone step..."
-                  value={newSubtask}
-                  onChange={e => setNewSubtask(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddSubtask();
-                    }
-                  }}
-                  className="flex-1 px-3.5 py-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs text-[var(--text-main)] focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddSubtask}
-                  className="px-4 py-2 rounded-xl bg-[var(--bg-card-subtle)] hover:bg-indigo-500/10 text-indigo-600 font-bold text-xs border border-[var(--border-subtle)] transition-colors cursor-pointer"
-                >
-                  Add Step
-                </button>
-              </div>
             </div>
 
             <div>

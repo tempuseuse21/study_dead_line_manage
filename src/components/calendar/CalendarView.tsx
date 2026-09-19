@@ -305,9 +305,9 @@ export const CalendarView: React.FC = () => {
                     )}
 
                     <div className="flex items-center justify-between mt-2 pt-2 border-t-[1.5px] border-ink-faint/60 dark:border-ink-faint text-[10px] text-ink-muted">
-                      <span>{task.subtasks?.length || 0} subtasks</span>
-                      <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                        {task.progress}%
+                      <span>Status</span>
+                      <span className="font-semibold text-indigo-600 dark:text-indigo-400 capitalize">
+                        {task.status.replace('_', ' ')}
                       </span>
                     </div>
                   </div>

@@ -238,12 +238,15 @@ export const CalendarView: React.FC = () => {
                 Selected Date
               </span>
               <h3 className="text-base font-extrabold text-ink dark:text-white">
-                {new Date(selectedDateStr + 'T00:00:00').toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
+                {(() => {
+                  const [y, m, d] = selectedDateStr.split('-').map(Number);
+                  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  });
+                })()}
               </h3>
             </div>
 

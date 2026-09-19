@@ -1,75 +1,200 @@
 import React from 'react';
 import { useTasks } from '../../context/TaskContext';
+import { cn } from '../../lib/utils';
+import {
+  LayoutDashboard,
+  CheckSquare,
+  Clock,
+  Calendar,
+  GraduationCap,
+  BookOpen,
+  Bell,
+  CalendarCheck,
+  Zap,
+  RotateCcw,
+  BarChart3,
+  Target,
+  FileText,
+  Bookmark,
+  Settings,
+  Sparkles,
+  Flame
+} from 'lucide-react';
 
 interface SidebarProps {
   activeView: string;
   onNavigate: (view: string) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
-  const { tasks, subjects, analytics } = useTasks();
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  badge?: number | string;
+}
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'tasks', label: `All Tasks [${tasks.length}]` },
-    { id: 'announcements', label: 'Notice Board' },
-    { id: 'upcoming', label: 'Deadlines' },
-    { id: 'calendar', label: 'Calendar' }
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
+  const { tasks, subjects, analytics, exams, revisionTopics, unreadAnnouncementsCount, notifications } = useTasks();
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const overdueTasks = tasks.filter(t => t.dueDate < todayStr && t.status !== 'completed' && t.status !== 'cancelled').length;
+  const dueTodayCount = tasks.filter(t => t.dueDate === todayStr && t.status !== 'completed').length;
+  const upcomingExamCount = exams.filter(e => e.examDate >= todayStr).length;
+  const revisionDueCount = revisionTopics.filter(t =>
+    t.nextRevisionDue && t.nextRevisionDue <= todayStr && t.status !== 'mastered'
+  ).length;
+
+  const sections: NavSection[] = [
+    {
+      title: 'Overview',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'tasks', label: 'All Tasks', icon: CheckSquare, badge: tasks.filter(t => t.status !== 'completed').length },
+        { id: 'upcoming', label: 'Deadlines', icon: Clock, badge: overdueTasks > 0 ? `${overdueTasks} Overdue` : dueTodayCount || undefined },
+        { id: 'calendar', label: 'Calendar', icon: Calendar }
+      ]
+    },
+    {
+      title: 'Academic',
+      items: [
+        { id: 'exams', label: 'Exams', icon: GraduationCap, badge: upcomingExamCount || undefined },
+        { id: 'subjects', label: 'Subjects', icon: BookOpen },
+        { id: 'announcements', label: 'Notice Board', icon: Bell, badge: unreadAnnouncementsCount || undefined }
+      ]
+    },
+    {
+      title: 'Study Tools',
+      items: [
+        { id: 'planner', label: 'Daily Planner', icon: CalendarCheck },
+        { id: 'focus', label: 'Focus Mode', icon: Zap },
+        { id: 'revision', label: 'Revision', icon: RotateCcw, badge: revisionDueCount || undefined },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 }
+      ]
+    },
+    {
+      title: 'Library',
+      items: [
+        { id: 'goals', label: 'Goals', icon: Target },
+        { id: 'notes', label: 'Notes', icon: FileText },
+        { id: 'resources', label: 'Resources', icon: Bookmark }
+      ]
+    },
+    {
+      title: 'System',
+      items: [
+        { id: 'settings', label: 'Settings', icon: Settings }
+      ]
+    }
   ];
 
   return (
-    <aside className="hidden lg:flex flex-col w-[320px] border-r-[1.5px] border-ink bg-bg dark:bg-ink p-8 h-[calc(100vh-89px)] sticky top-[89px] overflow-y-auto">
-      
-      <div className="mb-10">
-        <span className="mono mb-2 block text-ink dark:text-bg">Academic Index</span>
-        <nav className="flex flex-col gap-1">
-          {navItems.map(item => {
-            const isActive = activeView === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={`text-left py-2 font-semibold text-[0.9rem] flex justify-between items-center cursor-pointer border-b-[1.5px] border-transparent transition-colors ${
-                  isActive ? 'text-accent border-ink dark:border-bg' : 'text-ink dark:text-bg hover:border-ink dark:hover:border-bg'
-                }`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+    <aside className="hidden lg:flex flex-col w-[280px] bg-[var(--bg-card)] border-r border-[var(--border-subtle)] px-4 py-6 h-[calc(100vh-73px)] sticky top-[73px] overflow-y-auto shadow-sm">
+      <nav className="flex flex-col gap-5 flex-1">
+        {sections.map(section => (
+          <div key={section.title}>
+            <span className="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--text-faint)] px-3 mb-2 block font-mono">
+              {section.title}
+            </span>
+            <div className="flex flex-col gap-1">
+              {section.items.map(item => {
+                const isActive = activeView === item.id;
+                const IconComponent = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onNavigate(item.id)}
+                    className={cn(
+                      'group w-full px-3 py-2.5 rounded-xl font-medium text-sm flex items-center justify-between transition-all duration-200 cursor-pointer',
+                      isActive
+                        ? 'bg-gradient-to-r from-indigo-500/15 to-purple-500/10 text-indigo-600 dark:text-indigo-400 font-semibold shadow-xs border-l-4 border-indigo-600 dark:border-indigo-400'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-subtle)]'
+                    )}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <IconComponent
+                        className={cn(
+                          'w-4 h-4 flex-shrink-0 transition-transform duration-200 group-hover:scale-110',
+                          isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-[var(--text-faint)] group-hover:text-[var(--text-muted)]'
+                        )}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    {item.badge !== undefined && item.badge !== 0 && (
+                      <span className={cn(
+                        'text-[0.65rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 font-mono transition-all',
+                        item.id === 'upcoming' && overdueTasks > 0
+                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 animate-pulse'
+                          : isActive
+                            ? 'bg-indigo-600 text-white dark:bg-indigo-500'
+                            : 'bg-[var(--bg-card-subtle)] text-[var(--text-muted)] group-hover:bg-indigo-500/10 group-hover:text-indigo-600'
+                      )}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
 
-      <div className="mb-10">
-        <span className="mono mb-2 block text-ink dark:text-bg">Core Subjects</span>
-        <nav className="flex flex-col gap-1">
-          {subjects.map(subject => (
+      {/* Quick Subject Shortcuts */}
+      <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
+        <div className="flex items-center justify-between px-3 mb-2">
+          <span className="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--text-faint)] font-mono">
+            Subjects
+          </span>
+          <button
+            onClick={() => onNavigate('subjects')}
+            className="text-[0.7rem] text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+          >
+            View All
+          </button>
+        </div>
+        <div className="flex flex-col gap-1">
+          {subjects.slice(0, 4).map(subject => (
             <button
               key={subject.id}
-              onClick={() => onNavigate('tasks')}
-              className="text-left py-2 font-semibold text-[0.9rem] flex items-center cursor-pointer border-b-[1.5px] border-transparent text-ink dark:text-bg hover:border-ink dark:hover:border-bg transition-colors"
+              onClick={() => onNavigate('subjects')}
+              className="w-full px-3 py-1.5 rounded-lg text-xs flex items-center justify-between text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-subtle)] transition-colors"
             >
-              <span 
-                className="w-2.5 h-2.5 inline-block border-[1.5px] border-ink mr-2" 
-                style={{ backgroundColor: subject.color }}
-              />
-              {subject.code}
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-xs"
+                  style={{ backgroundColor: subject.color }}
+                />
+                <span className="font-medium truncate">{subject.code}</span>
+              </div>
+              <span className="text-[0.65rem] font-mono text-[var(--text-faint)]">{subject.credits} CR</span>
             </button>
           ))}
-        </nav>
-      </div>
-
-      <div className="mt-auto">
-        <span className="mono mb-1 block text-ink dark:text-bg">Session Progress</span>
-        <div className="font-mono text-3xl font-normal text-ink dark:text-bg">{analytics.completionRate}%</div>
-        <div className="w-full h-2 border-[1.5px] border-ink mt-2 bg-transparent">
-          <div 
-            className="h-full bg-ink dark:bg-bg"
-            style={{ width: `${analytics.completionRate}%` }}
-          />
         </div>
       </div>
 
+      {/* Progress Footer Card */}
+      <div className="mt-4 p-3.5 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/20">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-xs font-semibold text-[var(--text-main)]">Daily Target</span>
+          </div>
+          <span className="text-xs font-bold font-mono text-indigo-600 dark:text-indigo-400">
+            {analytics.completionRate}%
+          </span>
+        </div>
+        <div className="w-full h-2 rounded-full bg-[var(--bg-card-subtle)] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-500"
+            style={{ width: `${Math.max(5, analytics.completionRate)}%` }}
+          />
+        </div>
+      </div>
     </aside>
   );
 };

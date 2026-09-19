@@ -9,17 +9,11 @@ import {
   Tag,
   Megaphone,
   CheckCircle2,
-  Database,
-  Binary,
-  MessageSquare,
-  Code,
-  GitFork,
-  Pin,
   ShieldCheck,
   User,
   AlertTriangle
 } from 'lucide-react';
-import { Priority, RecurringFrequency, TaskReminder } from '../../types';
+import { Priority } from '../../types';
 import { useTasks } from '../../context/TaskContext';
 
 export const TaskFormModal: React.FC = () => {
@@ -39,14 +33,14 @@ export const TaskFormModal: React.FC = () => {
   // Task form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [subjectId, setSubjectId] = useState<string>(subjects[0]?.id || 'sub_it615');
+  const [subjectId, setSubjectId] = useState<string>(subjects[0]?.id || '');
   const [dueDate, setDueDate] = useState(todayStr);
   const [dueTime, setDueTime] = useState('23:59');
   const [priority, setPriority] = useState<Priority>('high');
   const [tagInput, setTagInput] = useState('Assignment');
   const [subtasks, setSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>([
-    { id: 'st_1', title: 'Review lecture notes & problem requirements', completed: false },
-    { id: 'st_2', title: 'Draft solutions & verify with rubric', completed: false }
+    { id: 'st_1', title: 'Review lecture notes & requirements', completed: false },
+    { id: 'st_2', title: 'Draft solution & verify with rubric', completed: false }
   ]);
   const [newSubtask, setNewSubtask] = useState('');
 
@@ -89,7 +83,7 @@ export const TaskFormModal: React.FC = () => {
       await createTask({
         title: title.trim(),
         description: description.trim(),
-        subjectId: selectedSubject ? selectedSubject.id : subjects[0]?.id || 'sub_it615',
+        subjectId: selectedSubject ? selectedSubject.id : subjects[0]?.id || '',
         dueDate,
         dueTime,
         priority,
@@ -102,7 +96,6 @@ export const TaskFormModal: React.FC = () => {
         createdByName: 'Student'
       });
 
-      // Reset form
       setTitle('');
       setDescription('');
       setNewSubtask('');
@@ -116,7 +109,7 @@ export const TaskFormModal: React.FC = () => {
     e.preventDefault();
     setAuthorError('');
     if (!annAuthor.trim()) {
-      setAuthorError('Please enter your full name. Anonymous posting is disabled to prevent false announcements.');
+      setAuthorError('Please enter your full name. Anonymous posting is disabled.');
       return;
     }
     if (!annTitle.trim() || !annContent.trim()) return;
@@ -147,51 +140,50 @@ export const TaskFormModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-2xl rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink p-6 sm:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-150 my-8">
-        {/* Header with Switcher Tabs */}
-        <div className="flex items-center justify-between border-b-[1.5px] border-ink-faint dark:border-ink-faint pb-4 mb-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-150 my-8">
+        {/* Header Tabs */}
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4 mb-6">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setActiveTab('task')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-none text-xs sm:text-sm font-bold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 activeTab === 'task'
-                  ? 'bg-ink dark:bg-ink-faint text-bg dark:text-ink text-white shadow-none shadow-blue-500/20'
-                  : 'text-ink-muted dark:text-ink-muted hover:bg-ink-faint dark:hover:bg-ink'
+                  ? 'gradient-brand-bg text-white shadow-md'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-subtle)]'
               }`}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>Academic Task</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('announcement')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-none text-xs sm:text-sm font-bold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 activeTab === 'announcement'
-                  ? 'bg-amber-600 text-white shadow-none shadow-amber-500/20'
-                  : 'text-ink-muted dark:text-ink-muted hover:bg-ink-faint dark:hover:bg-ink'
+                  ? 'bg-amber-600 text-white shadow-md'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-subtle)]'
               }`}
             >
-              <Megaphone className="h-4 w-4" />
-              <span>📢 CR Announcement</span>
+              <Megaphone className="w-4 h-4" />
+              <span>CR Announcement</span>
             </button>
           </div>
 
           <button
             onClick={() => setIsCreateTaskModalOpen(false)}
-            className="p-2 rounded-none text-ink-muted hover:text-ink-muted hover:bg-ink-faint dark:hover:bg-ink transition-colors"
+            className="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-subtle)] transition-colors cursor-pointer"
           >
-            <X className="h-5 w-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {activeTab === 'task' ? (
-          <form onSubmit={handleSubmitTask} className="space-y-5">
-            {/* Task Title */}
+          <form onSubmit={handleSubmitTask} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
                 Task / Assignment Title <span className="text-rose-500">*</span>
               </label>
               <input
@@ -200,33 +192,30 @@ export const TaskFormModal: React.FC = () => {
                 placeholder="e.g. Lab 4: SQL Query Optimization & Indexing"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-4 py-3 text-sm text-ink dark:text-white focus:border-blue-600 focus:outline-hidden transition-colors"
+                className="w-full px-4 py-3 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-sm font-semibold text-[var(--text-main)] focus:border-indigo-500 focus:bg-[var(--bg-card)] focus:outline-none transition-all"
               />
             </div>
 
-            {/* Subject & Priority (2 Cols) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Subject Selector (5 Subjects) */}
               <div>
-                <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1.5">
-                  5 Curriculum Subjects <span className="text-rose-500">*</span>
+                <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                  Curriculum Subject <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={subjectId}
                   onChange={e => setSubjectId(e.target.value)}
-                  className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-4 py-3 text-xs sm:text-sm font-semibold text-ink dark:text-white focus:border-blue-600 focus:outline-hidden transition-colors"
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs sm:text-sm font-semibold text-[var(--text-main)] focus:border-indigo-500 focus:outline-none"
                 >
                   {subjects.map(s => (
                     <option key={s.id} value={s.id}>
-                      {s.code} - {s.name}
+                      {s.code} — {s.name}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Priority */}
               <div>
-                <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
                   Priority
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -235,14 +224,14 @@ export const TaskFormModal: React.FC = () => {
                       key={p}
                       type="button"
                       onClick={() => setPriority(p)}
-                      className={`py-2.5 rounded-none text-xs font-bold uppercase transition-all ${
+                      className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                         priority === p
                           ? p === 'high'
-                            ? 'bg-rose-600 text-white shadow-none'
+                            ? 'bg-rose-600 text-white shadow-sm'
                             : p === 'medium'
-                            ? 'bg-amber-600 text-white shadow-none'
-                            : 'bg-ink dark:bg-ink-faint text-bg dark:text-ink text-white shadow-none'
-                          : 'bg-ink-faint dark:bg-ink text-ink-muted dark:text-ink-muted hover:bg-ink-faint dark:hover:bg-ink-700'
+                            ? 'bg-amber-600 text-white shadow-sm'
+                            : 'gradient-brand-bg text-white shadow-sm'
+                          : 'bg-[var(--bg-card-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)]'
                       }`}
                     >
                       {p}
@@ -252,10 +241,9 @@ export const TaskFormModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Due Date & Due Time (2 Cols) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
                   Due Date
                 </label>
                 <input
@@ -263,57 +251,55 @@ export const TaskFormModal: React.FC = () => {
                   required
                   value={dueDate}
                   onChange={e => setDueDate(e.target.value)}
-                  className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-4 py-3 text-sm text-ink dark:text-white focus:border-blue-600 focus:outline-hidden transition-colors"
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-sm font-mono text-[var(--text-main)] focus:border-indigo-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1.5">
-                  Submission Time (24h)
+                <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                  Submission Cutoff Time
                 </label>
                 <input
                   type="time"
                   value={dueTime}
                   onChange={e => setDueTime(e.target.value)}
-                  className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-4 py-3 text-sm text-ink dark:text-white focus:border-blue-600 focus:outline-hidden transition-colors"
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-sm font-mono text-[var(--text-main)] focus:border-indigo-500 focus:outline-none"
                 />
               </div>
             </div>
 
-            {/* Description */}
             <div>
-              <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1.5">
-                Description / Submission Requirements
+              <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                Submission Instructions & Requirements
               </label>
               <textarea
                 rows={3}
                 placeholder="Add key rubric requirements, submission links or chapter references..."
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-4 py-3 text-xs sm:text-sm text-ink dark:text-white focus:border-blue-600 focus:outline-hidden transition-colors"
+                className="w-full px-4 py-3 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs sm:text-sm text-[var(--text-main)] focus:border-indigo-500 focus:outline-none resize-none"
               />
             </div>
 
-            {/* Subtasks Mileink List */}
             <div>
-              <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1.5">
-                Mileinks & Steps ({subtasks.length})
+              <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                Subtasks & Milestones ({subtasks.length})
               </label>
-              <div className="space-y-2 mb-2 max-h-32 overflow-y-auto">
+              <div className="space-y-1.5 mb-2 max-h-32 overflow-y-auto">
                 {subtasks.map((st, idx) => (
                   <div
                     key={st.id}
-                    className="flex items-center justify-between p-2.5 rounded-none bg-bg dark:bg-ink/80 border-[1.5px] border-ink-faint dark:border-ink-faint text-xs"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs"
                   >
-                    <span className="text-ink-muted dark:text-bg truncate">
+                    <span className="text-[var(--text-main)] truncate font-medium">
                       {idx + 1}. {st.title}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleRemoveSubtask(st.id)}
-                      className="text-ink-muted hover:text-rose-500 p-1 transition-colors"
+                      className="text-[var(--text-muted)] hover:text-rose-500 p-1 transition-colors"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
@@ -322,7 +308,7 @@ export const TaskFormModal: React.FC = () => {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Add mileink step..."
+                  placeholder="Add milestone step..."
                   value={newSubtask}
                   onChange={e => setNewSubtask(e.target.value)}
                   onKeyDown={e => {
@@ -331,232 +317,185 @@ export const TaskFormModal: React.FC = () => {
                       handleAddSubtask();
                     }
                   }}
-                  className="flex-1 rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-3.5 py-2 text-xs text-ink dark:text-white focus:outline-hidden"
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs text-[var(--text-main)] focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={handleAddSubtask}
-                  className="px-3.5 py-2 rounded-none bg-ink-faint dark:bg-ink-700 text-xs font-bold text-ink-muted dark:text-bg hover:bg-ink-300 transition-colors"
+                  className="px-4 py-2 rounded-xl bg-[var(--bg-card-subtle)] hover:bg-indigo-500/10 text-indigo-600 font-bold text-xs border border-[var(--border-subtle)] transition-colors cursor-pointer"
                 >
                   Add Step
                 </button>
               </div>
             </div>
 
-            {/* Tags */}
             <div>
-              <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1.5">
-                Tags
+              <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                Tags (Comma separated)
               </label>
               <input
                 type="text"
                 value={tagInput}
                 onChange={e => setTagInput(e.target.value)}
-                placeholder="Assignment, Lab, Submission, Quiz"
-                className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-4 py-2.5 text-xs text-ink dark:text-white focus:outline-hidden"
+                placeholder="Assignment, Lab, Quiz, Project"
+                className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs text-[var(--text-main)] focus:outline-none"
               />
             </div>
 
-            {/* Footer Actions */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t-[1.5px] border-ink-faint dark:border-ink-faint">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--border-subtle)]">
               <button
                 type="button"
                 onClick={() => setIsCreateTaskModalOpen(false)}
-                className="px-5 py-2.5 rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint text-xs font-semibold text-ink-muted dark:text-ink-muted hover:bg-ink-faint dark:hover:bg-ink transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || !title.trim()}
-                className="px-6 py-2.5 rounded-none bg-ink dark:bg-ink-faint text-bg dark:text-ink hover:bg-ink dark:hover:bg-ink-faint text-xs font-bold text-white shadow-none shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50"
+                className="px-6 py-2.5 rounded-xl gradient-brand-bg text-white font-bold text-xs shadow-md shadow-indigo-500/20 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
               >
-                {isSubmitting ? 'Saving...' : 'Save & Publish Task'}
+                {isSubmitting ? 'Saving...' : 'Publish Task'}
               </button>
             </div>
           </form>
         ) : (
           <form onSubmit={handleSubmitAnnouncement} className="space-y-4">
-            {/* Anti-fraud Verified Identity Notice banner */}
-            <div className="p-3.5 rounded-none bg-amber-500/10 border-[1.5px] border-amber-500/30 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
-              <ShieldCheck className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold block text-amber-800 dark:text-amber-300">
-                  Verified Identity Required (Anti-False Notice Policy)
+                <span className="font-bold block text-amber-800 dark:text-amber-200">
+                  Verified CR Announcement Policy
                 </span>
-                <span className="text-[11px] text-ink-muted dark:text-ink-muted">
-                  To eliminate fake or unverified circulars, your full name will be visibly attached to this notice for all students.
+                <span className="text-[0.7rem]">
+                  Your full name will be attached to this notice to verify authenticity for all class members.
                 </span>
               </div>
             </div>
 
-            {/* Poster Full Name & CR Designation (Mandatory Identity Check) */}
             <div>
-              <label htmlFor="modal-ann-author-input" className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1">
-                Your Full Name (Person Posting Announcement) <span className="text-rose-500">*</span>
+              <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                Your Full Name <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
-                <User className="absolute left-3.5 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-muted" />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)]" />
                 <input
-                  id="modal-ann-author-input"
                   type="text"
                   required
-                  placeholder="e.g. Aarav Sharma (Class Representative, Section A)"
+                  placeholder="e.g. Aarav Sharma (Class Rep)"
                   value={annAuthor}
-                  onChange={e => {
-                    setAnnAuthor(e.target.value);
-                    if (authorError) setAuthorError('');
-                  }}
-                  className={`w-full rounded-none border-[1.5px] ${
-                    authorError
-                      ? 'border-rose-500 bg-rose-50/20 dark:bg-rose-950/20'
-                      : 'border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink'
-                  } pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-ink dark:text-white placeholder-ink-400 focus:border-amber-600 focus:outline-hidden transition-colors`}
+                  onChange={e => setAnnAuthor(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs sm:text-sm font-semibold text-[var(--text-main)] focus:outline-none"
                 />
               </div>
-              {authorError && (
-                <p className="mt-1 text-xs font-semibold text-rose-500 flex items-center gap-1">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  {authorError}
-                </p>
-              )}
             </div>
 
-            {/* Announcement Title */}
             <div>
-              <label htmlFor="modal-ann-title-input" className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1">
                 Announcement Headline <span className="text-rose-500">*</span>
               </label>
               <input
-                id="modal-ann-title-input"
                 type="text"
                 required
-                placeholder="e.g. DBMS Lab Session Rescheduled / Assignment Submission Guide"
+                placeholder="e.g. DBMS Lab Session Rescheduled"
                 value={annTitle}
                 onChange={e => setAnnTitle(e.target.value)}
-                className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-4 py-2.5 text-xs sm:text-sm text-ink dark:text-white focus:border-amber-600 focus:outline-hidden transition-colors"
+                className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs sm:text-sm text-[var(--text-main)] focus:outline-none"
               />
             </div>
 
-            {/* Related Subject & Urgency */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1">
                   Related Subject
                 </label>
                 <select
                   value={annSubjectId}
                   onChange={e => setAnnSubjectId(e.target.value)}
-                  className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-4 py-2.5 text-xs sm:text-sm font-semibold text-ink dark:text-white focus:border-amber-600 focus:outline-hidden transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-main)] focus:outline-none"
                 >
-                  <option value="all">📢 All 5 Subjects / General Class Notice</option>
+                  <option value="all">📢 General Class Notice</option>
                   {subjects.map(s => (
                     <option key={s.id} value={s.id}>
-                      {s.code} - {s.name}
+                      {s.code} — {s.name}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1">
-                  Priority Level
+                <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                  Urgency Level
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setAnnPriority('normal')}
-                    className={`py-2 rounded-none text-xs font-bold transition-all ${
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       annPriority === 'normal'
-                        ? 'bg-ink dark:bg-ink-faint text-bg dark:text-ink text-white shadow-none'
-                        : 'bg-ink-faint dark:bg-ink text-ink-muted dark:text-ink-muted hover:bg-ink-faint'
+                        ? 'gradient-brand-bg text-white'
+                        : 'bg-[var(--bg-card-subtle)] text-[var(--text-muted)]'
                     }`}
                   >
-                    Standard Notice
+                    Standard
                   </button>
                   <button
                     type="button"
                     onClick={() => setAnnPriority('urgent')}
-                    className={`py-2 rounded-none text-xs font-bold transition-all ${
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       annPriority === 'urgent'
-                        ? 'bg-rose-600 text-white shadow-none'
-                        : 'bg-ink-faint dark:bg-ink text-ink-muted dark:text-ink-muted hover:bg-ink-faint'
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-[var(--bg-card-subtle)] text-[var(--text-muted)]'
                     }`}
                   >
-                    🚨 Urgent Alert
+                    🚨 Urgent
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Announcement Message Content */}
             <div>
-              <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1">
-                Announcement Message <span className="text-rose-500">*</span>
+              <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                Notice Content <span className="text-rose-500">*</span>
               </label>
               <textarea
                 required
                 rows={3}
-                placeholder="Write detailed instructions, venue details, submission links or deadlines announced by professor..."
+                placeholder="Write detailed instructions..."
                 value={annContent}
                 onChange={e => setAnnContent(e.target.value)}
-                className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-4 py-2.5 text-xs sm:text-sm text-ink dark:text-white focus:border-amber-600 focus:outline-hidden transition-colors"
+                className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs text-[var(--text-main)] focus:outline-none resize-none"
               />
             </div>
 
-            {/* CR Passcode */}
             <div>
-              <label htmlFor="modal-ann-passcode-input" className="block text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold font-mono text-[var(--text-muted)] uppercase tracking-wider mb-1">
                 CR Authorization Passcode <span className="text-rose-500">*</span>
               </label>
               <input
-                id="modal-ann-passcode-input"
                 type="password"
                 required
                 placeholder="Enter CR passcode"
                 value={annPasscode}
-                onChange={e => {
-                  setAnnPasscode(e.target.value);
-                  if (authorError) setAuthorError('');
-                }}
-                className={`w-full rounded-none border-[1.5px] ${
-                  authorError
-                    ? 'border-rose-500 bg-rose-50/20 dark:bg-rose-950/20'
-                    : 'border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink'
-                } px-4 py-2.5 text-xs sm:text-sm font-semibold text-ink dark:text-white placeholder-ink-400 focus:border-amber-600 focus:outline-hidden transition-colors`}
+                onChange={e => setAnnPasscode(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs text-[var(--text-main)] focus:outline-none"
               />
             </div>
 
-            {/* Pin to Top Checkbox */}
-            <div className="p-3 rounded-none bg-bg dark:bg-ink/50 border-[1.5px] border-ink-faint dark:border-ink-faint flex items-center justify-between">
-              <label className="flex items-center gap-2.5 text-xs font-bold text-ink-muted dark:text-ink-muted cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={annIsPinned}
-                  onChange={e => setAnnIsPinned(e.target.checked)}
-                  className="rounded border-ink-faint text-amber-600 focus:ring-0 h-4 w-4"
-                />
-                <Pin className="h-3.5 w-3.5 text-amber-500" />
-                <span>Pin this Announcement to Top of Class Feed</span>
-              </label>
-              <span className="text-[10px] text-ink-muted font-medium">CR Noticeboard</span>
-            </div>
-
-            {/* Footer Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t-[1.5px] border-ink-faint dark:border-ink-faint">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--border-subtle)]">
               <button
                 type="button"
                 onClick={() => setIsCreateTaskModalOpen(false)}
-                className="px-5 py-2.5 rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint text-xs font-semibold text-ink-muted dark:text-ink-muted hover:bg-ink-faint dark:hover:bg-ink transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-muted)]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || !annAuthor.trim() || !annTitle.trim() || !annContent.trim()}
-                className="px-6 py-2.5 rounded-none bg-amber-600 hover:bg-amber-700 text-xs font-bold text-white shadow-none shadow-amber-500/20 active:scale-95 transition-all disabled:opacity-50"
+                className="px-6 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-xs shadow-md"
               >
-                {isSubmitting ? 'Publishing...' : '📢 Post Verified Announcement (CR)'}
+                {isSubmitting ? 'Publishing...' : '📢 Post Announcement'}
               </button>
             </div>
           </form>

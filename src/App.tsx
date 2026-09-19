@@ -20,6 +20,15 @@ import { TaskFormModal } from './components/tasks/TaskFormModal';
 import { NotificationDrawer } from './components/notifications/NotificationDrawer';
 import { NotificationToastContainer } from './components/notifications/NotificationToastContainer';
 import { GlobalSearchModal } from './components/search/GlobalSearchModal';
+import { AnalyticsView } from './components/analytics/AnalyticsView';
+import { SettingsView } from './components/settings/SettingsView';
+// New modules
+import { ExamsView } from './components/exams/ExamsView';
+import { GoalsView } from './components/goals/GoalsView';
+import { NotesView } from './components/notes/NotesView';
+import { ResourcesView } from './components/resources/ResourcesView';
+import { RevisionView } from './components/revision/RevisionView';
+import { PlannerView } from './components/planner/PlannerView';
 
 const AppContent: React.FC = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -44,6 +53,23 @@ const AppContent: React.FC = () => {
         return <AnnouncementsView onNavigate={setActiveView} />;
       case 'focus':
         return <FocusModeView />;
+      case 'analytics':
+        return <AnalyticsView />;
+      case 'settings':
+        return <SettingsView />;
+      // New modules
+      case 'exams':
+        return <ExamsView />;
+      case 'goals':
+        return <GoalsView />;
+      case 'notes':
+        return <NotesView />;
+      case 'resources':
+        return <ResourcesView />;
+      case 'revision':
+        return <RevisionView />;
+      case 'planner':
+        return <PlannerView />;
       default:
         return <DashboardView onNavigate={setActiveView} />;
     }
@@ -53,7 +79,7 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen bg-bg dark:bg-ink text-ink dark:text-bg flex flex-col font-sans transition-colors">
       <Navbar onNavigate={setActiveView} activeView={activeView} />
       
-      <div className="flex-1 grid lg:grid-cols-[320px_1fr_320px] w-full items-stretch">
+      <div className="flex-1 grid lg:grid-cols-[280px_1fr_280px] w-full items-stretch">
         <Sidebar activeView={activeView} onNavigate={setActiveView} />
         
         <main className="p-8 overflow-y-auto pb-24 lg:pb-8 flex flex-col gap-12">

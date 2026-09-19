@@ -11,17 +11,15 @@ import {
   Layers,
   Send,
   Download,
-  AlertCircle,
   FileText,
   BookOpen,
   Database,
   Binary,
   Code,
-  GitFork,
-  Check
+  GitFork
 } from 'lucide-react';
 import { formatLiveCountdown, getPriorityBadge, formatDateDisplay } from '../../lib/utils';
-import { Priority, Task } from '../../types';
+import { Priority } from '../../types';
 import { useTasks } from '../../context/TaskContext';
 import { DeleteTaskConfirmationModal } from './DeleteTaskConfirmationModal';
 
@@ -30,9 +28,7 @@ export const TaskDetailModal: React.FC = () => {
     selectedTask,
     setSelectedTask,
     updateTask,
-    deleteTask,
     addComment,
-    addAttachment,
     subjects
   } = useTasks();
 
@@ -73,7 +69,6 @@ export const TaskDetailModal: React.FC = () => {
 
   const SubIcon = getSubjectIcon(subject?.code);
 
-  // Handle Subtask Add
   const handleAddSubtask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSubtaskTitle.trim()) return;
@@ -90,7 +85,6 @@ export const TaskDetailModal: React.FC = () => {
     setNewSubtaskTitle('');
   };
 
-  // Handle Remove Subtask
   const handleRemoveSubtask = async (subtaskId: string) => {
     const updatedSubtasks = (selectedTask.subtasks || []).filter(s => s.id !== subtaskId);
     await updateTask(selectedTask.id, {
@@ -98,7 +92,6 @@ export const TaskDetailModal: React.FC = () => {
     });
   };
 
-  // Handle AI Subtask Generator
   const handleAIBreakdown = async () => {
     setIsGeneratingAI(true);
     setAiTip(null);
@@ -125,7 +118,6 @@ export const TaskDetailModal: React.FC = () => {
         if (data.studyTip) setAiTip(data.studyTip);
       }
     } catch {
-      // Fallback local breakdown
       const localMileinks = [
         { id: `st_fb1_${Date.now()}`, title: 'Review core definitions and course reference material', completed: false },
         { id: `st_fb2_${Date.now()}`, title: 'Implement and verify solutions against problem rubric', completed: false },
@@ -139,7 +131,6 @@ export const TaskDetailModal: React.FC = () => {
     }
   };
 
-  // Handle Comment Add
   const handleSendComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentInput.trim()) return;
@@ -148,37 +139,30 @@ export const TaskDetailModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
       <div
         id="task-detail-modal"
-        className="relative flex flex-col w-full max-w-3xl max-h-[90vh] rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        className="relative flex flex-col w-full max-w-3xl max-h-[90vh] rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header with Urgency Banner */}
-        <div
-          className={`px-6 py-4 flex items-center justify-between border-b-[1.5px] ${
-            countdown.isOverdue
-              ? 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
-              : 'bg-bg dark:bg-ink-850 border-ink-faint dark:border-ink-faint text-ink dark:text-bg'
-          }`}
-        >
+        {/* Header */}
+        <div className="px-6 py-4 flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-card-subtle)]">
           <div className="flex items-center gap-3">
-            <div className={`flex items-center gap-1.5 rounded-none px-3 py-1 text-xs font-bold border-[1.5px] ${countdown.badgeClass}`}>
-              <Clock className="h-3.5 w-3.5" />
+            <div className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-mono font-bold border ${countdown.badgeClass}`}>
+              <Clock className="w-3.5 h-3.5" />
               <span>{countdown.text}</span>
             </div>
 
             {subject && (
               <span
-                className="inline-flex items-center gap-1.5 rounded-none px-2.5 py-1 text-xs font-semibold border"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-mono font-bold"
                 style={{
                   backgroundColor: `${subject.color}15`,
-                  color: subject.color,
-                  borderColor: `${subject.color}30`
+                  color: subject.color
                 }}
               >
-                <SubIcon className="h-3.5 w-3.5" />
-                <span>{subject.code} • {subject.name}</span>
+                <SubIcon className="w-3.5 h-3.5" />
+                <span>{subject.code} — {subject.name}</span>
               </span>
             )}
           </div>
@@ -186,87 +170,82 @@ export const TaskDetailModal: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="p-1.5 rounded-none text-ink-muted hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+              className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
               title="Delete Task"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="w-4 h-4" />
             </button>
             <button
               id="close-task-modal-btn"
               onClick={() => setSelectedTask(null)}
-              className="p-1.5 rounded-none text-ink-muted hover:text-ink-muted dark:hover:text-bg hover:bg-ink-faint dark:hover:bg-ink transition-colors"
+              className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors"
             >
-              <X className="h-5 w-5" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Title & Description */}
-          <div>
-            <div className="flex items-start gap-3">
-              <div
-                className="mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-none text-white shadow-none"
-                style={{ backgroundColor: subject ? subject.color : '#3b82f6' }}
-              >
-                <SubIcon className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={selectedTask.title}
-                  onChange={e => updateTask(selectedTask.id, { title: e.target.value })}
-                  className="w-full text-lg sm:text-xl font-bold text-ink dark:text-white bg-transparent border-b-[1.5px] border-transparent hover:border-ink-faint dark:hover:border-ink-faint focus:border-blue-500 focus:outline-hidden py-0.5"
-                  placeholder="Task title"
-                />
-                <textarea
-                  value={selectedTask.description || ''}
-                  onChange={e => updateTask(selectedTask.id, { description: e.target.value })}
-                  rows={2}
-                  className="mt-2 w-full text-xs sm:text-sm text-ink-muted dark:text-ink-muted bg-transparent border-[1.5px] border-transparent hover:border-ink-faint dark:hover:border-ink-faint focus:border-blue-500 rounded-none p-1.5 focus:outline-hidden resize-none leading-relaxed"
-                  placeholder="Add assignment instructions, notes, or criteria..."
-                />
-              </div>
+          <div className="flex items-start gap-3">
+            <div
+              className="mt-1 w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl text-white shadow-xs"
+              style={{ backgroundColor: subject ? subject.color : '#6366f1' }}
+            >
+              <SubIcon className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <input
+                type="text"
+                value={selectedTask.title}
+                onChange={e => updateTask(selectedTask.id, { title: e.target.value })}
+                className="w-full text-lg sm:text-xl font-display font-bold text-[var(--text-main)] bg-transparent border-b border-transparent hover:border-[var(--border-subtle)] focus:border-indigo-500 focus:outline-none py-0.5"
+                placeholder="Task title"
+              />
+              <textarea
+                value={selectedTask.description || ''}
+                onChange={e => updateTask(selectedTask.id, { description: e.target.value })}
+                rows={2}
+                className="mt-2 w-full text-xs sm:text-sm text-[var(--text-muted)] bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] rounded-xl p-3 focus:outline-none resize-none leading-relaxed"
+                placeholder="Add assignment instructions, notes, or criteria..."
+              />
             </div>
           </div>
 
-          {/* Quick Properties Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-none bg-bg dark:bg-ink/40 border-[1.5px] border-ink-faint dark:border-ink-faint text-xs">
-            {/* Due Date & Time */}
+          {/* Quick Properties */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs">
             <div>
-              <span className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider block mb-1">
+              <span className="text-[0.65rem] font-bold font-mono text-[var(--text-muted)] uppercase block mb-1">
                 Deadline
               </span>
               <input
                 type="date"
                 value={selectedTask.dueDate}
                 onChange={e => updateTask(selectedTask.id, { dueDate: e.target.value })}
-                className="w-full bg-bg dark:bg-ink border-[1.5px] border-ink-faint dark:border-ink-faint rounded-none px-2 py-1 text-xs text-ink dark:text-bg focus:outline-hidden"
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] font-mono focus:outline-none"
               />
             </div>
 
             <div>
-              <span className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider block mb-1">
+              <span className="text-[0.65rem] font-bold font-mono text-[var(--text-muted)] uppercase block mb-1">
                 Time
               </span>
               <input
                 type="time"
                 value={selectedTask.dueTime || '23:59'}
                 onChange={e => updateTask(selectedTask.id, { dueTime: e.target.value })}
-                className="w-full bg-bg dark:bg-ink border-[1.5px] border-ink-faint dark:border-ink-faint rounded-none px-2 py-1 text-xs text-ink dark:text-bg focus:outline-hidden"
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] font-mono focus:outline-none"
               />
             </div>
 
-            {/* Subject Selector */}
             <div>
-              <span className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider block mb-1">
+              <span className="text-[0.65rem] font-bold font-mono text-[var(--text-muted)] uppercase block mb-1">
                 Subject
               </span>
               <select
                 value={selectedTask.subjectId}
                 onChange={e => updateTask(selectedTask.id, { subjectId: e.target.value })}
-                className="w-full bg-bg dark:bg-ink border-[1.5px] border-ink-faint dark:border-ink-faint rounded-none px-2 py-1 text-xs text-ink dark:text-bg focus:outline-hidden"
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] focus:outline-none"
               >
                 {subjects.map(s => (
                   <option key={s.id} value={s.id}>
@@ -276,15 +255,14 @@ export const TaskDetailModal: React.FC = () => {
               </select>
             </div>
 
-            {/* Priority */}
             <div>
-              <span className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider block mb-1">
+              <span className="text-[0.65rem] font-bold font-mono text-[var(--text-muted)] uppercase block mb-1">
                 Priority
               </span>
               <select
                 value={selectedTask.priority}
                 onChange={e => updateTask(selectedTask.id, { priority: e.target.value as Priority })}
-                className="w-full bg-bg dark:bg-ink border-[1.5px] border-ink-faint dark:border-ink-faint rounded-none px-2 py-1 text-xs text-ink dark:text-bg focus:outline-hidden capitalize"
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] capitalize focus:outline-none"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -294,191 +272,128 @@ export const TaskDetailModal: React.FC = () => {
             </div>
           </div>
 
-          {/* AI Tip if Generated */}
           {aiTip && (
-            <div className="p-3.5 rounded-none bg-ink-faint dark:bg-ink0/10 border-[1.5px] border-blue-500/20 text-xs text-blue-800 dark:text-blue-300 flex items-start gap-2.5 animate-in fade-in">
-              <Sparkles className="h-4 w-4 text-ink dark:text-bg flex-shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-700 dark:text-indigo-300 flex items-start gap-2.5">
+              <Sparkles className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold block mb-0.5">Academic Recommendation:</span>
+                <span className="font-bold block mb-0.5">Study Recommendation:</span>
                 <span>{aiTip}</span>
               </div>
             </div>
           )}
 
-          {/* Tabs Navigation: Subtasks, Attachments, Comments */}
-          <div className="flex items-center gap-2 border-b-[1.5px] border-ink-faint dark:border-ink-faint pb-2 text-xs">
+          {/* Navigation Tabs */}
+          <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] pb-2 text-xs">
             <button
               onClick={() => setActiveTab('subtasks')}
-              className={`flex items-center gap-1.5 rounded-none px-3 py-1.5 font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
                 activeTab === 'subtasks'
-                  ? 'bg-ink-faint dark:bg-ink dark:bg-blue-950 text-ink dark:text-bg dark:text-blue-400'
-                  : 'text-ink-muted dark:text-ink-muted hover:bg-ink-faint dark:hover:bg-ink'
+                  ? 'gradient-brand-bg text-white shadow-xs'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-subtle)]'
               }`}
             >
-              <Layers className="h-3.5 w-3.5" />
-              <span>Mileinks & Steps ({totalSubtasks})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('attachments')}
-              className={`flex items-center gap-1.5 rounded-none px-3 py-1.5 font-semibold transition-colors ${
-                activeTab === 'attachments'
-                  ? 'bg-ink-faint dark:bg-ink dark:bg-blue-950 text-ink dark:text-bg dark:text-blue-400'
-                  : 'text-ink-muted dark:text-ink-muted hover:bg-ink-faint dark:hover:bg-ink'
-              }`}
-            >
-              <Paperclip className="h-3.5 w-3.5" />
-              <span>Files ({selectedTask.attachments?.length || 0})</span>
+              <Layers className="w-3.5 h-3.5" />
+              <span>Milestones ({totalSubtasks})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('comments')}
-              className={`flex items-center gap-1.5 rounded-none px-3 py-1.5 font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
                 activeTab === 'comments'
-                  ? 'bg-ink-faint dark:bg-ink dark:bg-blue-950 text-ink dark:text-bg dark:text-blue-400'
-                  : 'text-ink-muted dark:text-ink-muted hover:bg-ink-faint dark:hover:bg-ink'
+                  ? 'gradient-brand-bg text-white shadow-xs'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-subtle)]'
               }`}
             >
-              <MessageSquare className="h-3.5 w-3.5" />
+              <MessageSquare className="w-3.5 h-3.5" />
               <span>Discussion ({selectedTask.comments?.length || 0})</span>
             </button>
           </div>
 
-          {/* Tab Content: Subtasks / Mileinks */}
+          {/* Subtasks Tab */}
           {activeTab === 'subtasks' && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-ink-muted dark:text-ink-muted uppercase tracking-wider">
-                  Mileink Steps & Requirements
+                <span className="text-xs font-bold font-mono text-[var(--text-muted)] uppercase">
+                  Subtask Checklist
                 </span>
-
                 <button
                   onClick={handleAIBreakdown}
                   disabled={isGeneratingAI}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-none text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-none hover:opacity-90 disabled:opacity-50"
+                  className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-bold gradient-brand-bg text-white shadow-xs hover:scale-105 transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  <Sparkles className="h-3 w-3" />
-                  <span>{isGeneratingAI ? 'Generating...' : 'AI Mileinks'}</span>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{isGeneratingAI ? 'Generating...' : 'AI Breakdown'}</span>
                 </button>
               </div>
 
-              {/* Subtask List */}
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-56 overflow-y-auto">
                 {(selectedTask.subtasks || []).length === 0 ? (
-                  <div className="p-4 text-center rounded-none bg-bg dark:bg-ink/40 text-xs text-ink-muted">
-                    No mileink steps yet. Add key steps below or use AI Mileinks.
+                  <div className="p-4 text-center rounded-2xl bg-[var(--bg-card-subtle)] text-xs text-[var(--text-muted)]">
+                    No milestone steps created yet.
                   </div>
                 ) : (
                   selectedTask.subtasks?.map((st, index) => (
                     <div
                       key={st.id}
-                      className="group flex items-center justify-between p-3 rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink-850 text-xs shadow-2xs"
+                      className="group flex items-center justify-between p-3 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs"
                     >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-ink-faint dark:bg-ink dark:bg-blue-950 text-[11px] font-black text-blue-700 dark:text-blue-300">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full bg-indigo-500/10 text-[0.65rem] font-bold font-mono text-indigo-600">
                           {index + 1}
                         </span>
-                        <span className="font-semibold text-ink dark:text-bg truncate">
+                        <span className="font-semibold text-[var(--text-main)] truncate">
                           {st.title}
                         </span>
                       </div>
-
                       <button
                         onClick={() => handleRemoveSubtask(st.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-ink-muted hover:text-rose-500 rounded transition-opacity"
-                        title="Remove step"
+                        className="opacity-0 group-hover:opacity-100 p-1 text-[var(--text-muted)] hover:text-rose-500 rounded transition-opacity"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ))
                 )}
               </div>
 
-              {/* Add Subtask Input */}
               <form onSubmit={handleAddSubtask} className="flex gap-2 pt-2">
                 <input
                   type="text"
-                  placeholder="Add mileink step (e.g. Test edge cases, format bibliography)..."
+                  placeholder="Add milestone step..."
                   value={newSubtaskTitle}
                   onChange={e => setNewSubtaskTitle(e.target.value)}
-                  className="flex-1 rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-3.5 py-2 text-xs text-ink dark:text-bg focus:outline-hidden"
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs text-[var(--text-main)] focus:outline-none"
                 />
                 <button
                   type="submit"
                   disabled={!newSubtaskTitle.trim()}
-                  className="px-4 py-2 rounded-none bg-ink dark:bg-ink-faint text-bg dark:text-ink hover:bg-ink dark:hover:bg-ink-faint text-xs font-bold text-white shadow-none disabled:opacity-40 transition-colors"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold disabled:opacity-40"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </form>
             </div>
           )}
 
-          {/* Tab Content: Attachments */}
-          {activeTab === 'attachments' && (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                {(selectedTask.attachments || []).length === 0 ? (
-                  <div className="p-6 text-center rounded-none bg-bg dark:bg-ink/40 text-xs text-ink-muted">
-                    No files attached to this task.
-                  </div>
-                ) : (
-                  selectedTask.attachments?.map(att => (
-                    <div
-                      key={att.id}
-                      className="flex items-center justify-between p-3 rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink-850 text-xs"
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-ink dark:text-bg" />
-                        <div>
-                          <span className="font-semibold text-ink dark:text-bg block">
-                            {att.name}
-                          </span>
-                          <span className="text-[10px] text-ink-muted">
-                            {(att.size / 1024 / 1024).toFixed(2)} MB
-                          </span>
-                        </div>
-                      </div>
-
-                      <a
-                        href={att.url}
-                        download={att.name}
-                        className="p-1.5 rounded-none text-ink-muted hover:text-ink dark:text-bg hover:bg-ink-faint dark:hover:bg-ink"
-                        title="Download file"
-                      >
-                        <Download className="h-4 w-4" />
-                      </a>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Tab Content: Comments */}
+          {/* Comments Tab */}
           {activeTab === 'comments' && (
             <div className="space-y-3">
-              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-56 overflow-y-auto">
                 {(selectedTask.comments || []).length === 0 ? (
-                  <div className="p-4 text-center rounded-none bg-bg dark:bg-ink/40 text-xs text-ink-muted">
-                    No discussion comments yet.
+                  <div className="p-4 text-center rounded-2xl bg-[var(--bg-card-subtle)] text-xs text-[var(--text-muted)]">
+                    No comments yet.
                   </div>
                 ) : (
                   selectedTask.comments?.map(c => (
                     <div
                       key={c.id}
-                      className="p-3 rounded-none bg-bg dark:bg-ink/60 border-[1.5px] border-ink-faint dark:border-ink-faint text-xs space-y-1"
+                      className="p-3 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs space-y-1"
                     >
-                      <div className="flex items-center justify-between text-[10px] text-ink-muted">
-                        <span className="font-bold text-ink-muted dark:text-ink-muted">
-                          {c.userName}
-                        </span>
+                      <div className="flex items-center justify-between text-[0.65rem] text-[var(--text-faint)]">
+                        <span className="font-bold text-[var(--text-muted)] font-mono">{c.userName}</span>
                         <span>{new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
-                      <p className="text-ink-muted dark:text-bg leading-relaxed">
-                        {c.content}
-                      </p>
+                      <p className="text-[var(--text-main)]">{c.content}</p>
                     </div>
                   ))
                 )}
@@ -487,17 +402,17 @@ export const TaskDetailModal: React.FC = () => {
               <form onSubmit={handleSendComment} className="flex gap-2 pt-2">
                 <input
                   type="text"
-                  placeholder="Write a message or study tip for the class..."
+                  placeholder="Write a comment..."
                   value={commentInput}
                   onChange={e => setCommentInput(e.target.value)}
-                  className="flex-1 rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-3.5 py-2 text-xs text-ink dark:text-bg focus:outline-hidden"
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs text-[var(--text-main)] focus:outline-none"
                 />
                 <button
                   type="submit"
                   disabled={!commentInput.trim()}
-                  className="px-4 py-2 rounded-none bg-ink dark:bg-ink-faint text-bg dark:text-ink hover:bg-ink dark:hover:bg-ink-faint text-xs font-bold text-white shadow-none disabled:opacity-40 transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl gradient-brand-bg text-white text-xs font-bold disabled:opacity-40 flex items-center gap-1.5"
                 >
-                  <Send className="h-3.5 w-3.5" />
+                  <Send className="w-3.5 h-3.5" />
                   <span>Send</span>
                 </button>
               </form>

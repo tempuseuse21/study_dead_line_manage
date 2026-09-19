@@ -127,12 +127,12 @@ export const NotificationToastContainer: React.FC<NotificationToastContainerProp
           <div
             key={toast.id}
             id={`website-notification-${toast.id}`}
-            className={`pointer-events-auto relative overflow-hidden rounded-none border-[1.5px] shadow-2xl backdrop-blur-md transition-all transform animate-in slide-in-from-right duration-300 ${
+            className={`pointer-events-auto relative overflow-hidden rounded-xl border-[1.5px] shadow-2xl transition-all transform animate-in slide-in-from-right duration-300 ${
               isAnnouncement
-                ? 'bg-amber-50/95 dark:bg-ink/95 border-amber-400/80 dark:border-amber-500/50 text-ink dark:text-bg shadow-amber-500/10'
+                ? 'bg-amber-50 dark:bg-slate-900 border-amber-400 dark:border-amber-600 text-slate-900 dark:text-white shadow-amber-500/10'
                 : isUrgent
-                ? 'bg-rose-50/95 dark:bg-ink/95 border-rose-400/80 dark:border-rose-500/50 text-ink dark:text-bg shadow-rose-500/10'
-                : 'bg-bg/95 dark:bg-ink/95 border-blue-400/70 dark:border-blue-500/40 text-ink dark:text-bg shadow-blue-500/10'
+                ? 'bg-rose-50 dark:bg-slate-900 border-rose-400 dark:border-rose-600 text-slate-900 dark:text-white shadow-rose-500/10'
+                : 'bg-white dark:bg-slate-900 border-indigo-300 dark:border-indigo-600 text-slate-900 dark:text-white shadow-indigo-500/10'
             }`}
           >
             <div className="p-4">
@@ -140,7 +140,7 @@ export const NotificationToastContainer: React.FC<NotificationToastContainerProp
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   {isAnnouncement ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-800 dark:text-amber-300 border-[1.5px] border-amber-500/30 text-[11px] font-bold">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-500/40 text-[11px] font-bold">
                       <Megaphone className="h-3 w-3 text-amber-600 dark:text-amber-400" />
                       CR Class Notice
                     </span>
@@ -148,9 +148,9 @@ export const NotificationToastContainer: React.FC<NotificationToastContainerProp
                     <span
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border"
                       style={{
-                        backgroundColor: toast.subjectColor ? `${toast.subjectColor}18` : 'rgba(59,130,246,0.1)',
-                        borderColor: toast.subjectColor ? `${toast.subjectColor}40` : 'rgba(59,130,246,0.3)',
-                        color: toast.subjectColor || '#2563eb'
+                        backgroundColor: toast.subjectColor ? `${toast.subjectColor}25` : 'rgba(99,102,241,0.15)',
+                        borderColor: toast.subjectColor ? `${toast.subjectColor}60` : 'rgba(99,102,241,0.4)',
+                        color: toast.subjectColor || '#4f46e5'
                       }}
                     >
                       <CheckCircle2 className="h-3 w-3" />
@@ -159,7 +159,7 @@ export const NotificationToastContainer: React.FC<NotificationToastContainerProp
                   )}
 
                   {toast.authorName && (
-                    <span className="text-[11px] font-medium text-ink-muted dark:text-ink-muted flex items-center gap-1">
+                    <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                       {toast.authorName}
                     </span>
@@ -167,13 +167,13 @@ export const NotificationToastContainer: React.FC<NotificationToastContainerProp
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[10px] text-ink-muted flex items-center gap-0.5">
-                    <Volume2 className="h-3 w-3 text-ink dark:text-bg animate-pulse" />
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-0.5">
+                    <Volume2 className="h-3 w-3 animate-pulse" />
                     Live
                   </span>
                   <button
                     onClick={() => handleDismiss(toast.id)}
-                    className="p-1 rounded-none text-ink-muted hover:text-ink-muted dark:hover:text-bg hover:bg-ink-faint/50 dark:hover:bg-ink transition-colors"
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     title="Dismiss"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -182,12 +182,12 @@ export const NotificationToastContainer: React.FC<NotificationToastContainerProp
               </div>
 
               {/* Title */}
-              <h4 className="text-xs sm:text-sm font-bold text-ink dark:text-white line-clamp-1 mb-1">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white line-clamp-1 mb-1">
                 {toast.title}
               </h4>
 
               {/* Message Body */}
-              <p className="text-xs text-ink-muted dark:text-ink-muted line-clamp-2 leading-relaxed mb-2.5">
+              <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 leading-relaxed mb-2.5">
                 {toast.message}
               </p>
 

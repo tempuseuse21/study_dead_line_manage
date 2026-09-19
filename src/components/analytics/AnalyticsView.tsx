@@ -18,7 +18,6 @@ export const AnalyticsView: React.FC = () => {
   const total = analytics.totalTasks || 1;
   const completed = analytics.completedTasks;
   const overdue = analytics.overdueTasks;
-  const pending = analytics.pendingTasks;
 
   const urgentCount = tasks.filter(t => t.priority === 'urgent').length;
   const highCount = tasks.filter(t => t.priority === 'high').length;
@@ -26,83 +25,85 @@ export const AnalyticsView: React.FC = () => {
   const lowCount = tasks.filter(t => t.priority === 'low').length;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
       {/* Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-extrabold text-ink dark:text-white tracking-tight flex items-center gap-2">
-          <BarChart3 className="h-6 w-6 text-indigo-600" />
-          <span>Academic Productivity & Analytics</span>
-        </h1>
-        <p className="text-xs sm:text-sm text-ink-muted dark:text-ink-muted mt-1">
+        <div className="flex items-center gap-2 mb-1">
+          <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-main)]">
+            Productivity & Academic Analytics
+          </h1>
+        </div>
+        <p className="text-xs sm:text-sm text-[var(--text-muted)]">
           Insights on your submission velocity, subject workloads, and deadline adherence.
         </p>
       </div>
 
-      {/* Top 4 Performance Cards */}
+      {/* Top 4 Performance Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink p-5 shadow-none">
-          <div className="flex items-center justify-between text-ink-muted mb-2">
-            <span className="text-xs font-semibold">Completion Rate</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+        <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-display">
+            <span>Completion Rate</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
-          <p className="text-3xl font-black text-ink dark:text-white">
+          <p className="font-mono text-3xl font-extrabold text-[var(--text-main)]">
             {analytics.completionRate}%
           </p>
-          <span className="text-[11px] text-ink-muted dark:text-ink-muted">
+          <span className="text-[0.7rem] text-[var(--text-faint)]">
             {completed} of {analytics.totalTasks} tasks submitted
           </span>
         </div>
 
-        <div className="rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink p-5 shadow-none">
-          <div className="flex items-center justify-between text-ink-muted mb-2">
-            <span className="text-xs font-semibold">On-Time Submission</span>
-            <TrendingUp className="h-4 w-4 text-indigo-500" />
+        <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-display">
+            <span>On-Time Rate</span>
+            <TrendingUp className="w-4 h-4 text-indigo-500" />
           </div>
-          <p className="text-3xl font-black text-indigo-600 dark:text-indigo-400">
-            {analytics.onTimeSubmissionRate}%
+          <p className="font-mono text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">
+            {analytics.onTimeCompletionRate}%
           </p>
-          <span className="text-[11px] text-ink-muted dark:text-ink-muted">
-            Submitted before cutoff
+          <span className="text-[0.7rem] text-[var(--text-faint)]">
+            Submitted before deadline
           </span>
         </div>
 
-        <div className="rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink p-5 shadow-none">
-          <div className="flex items-center justify-between text-ink-muted mb-2">
-            <span className="text-xs font-semibold">Study Streak</span>
-            <Flame className="h-4 w-4 text-amber-500" />
+        <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-display">
+            <span>Study Streak</span>
+            <Flame className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-3xl font-black text-amber-500">
+          <p className="font-mono text-3xl font-extrabold text-amber-500">
             {analytics.currentStreak} Days
           </p>
-          <span className="text-[11px] text-ink-muted dark:text-ink-muted">
-            Personal Best: {analytics.bestStreak} days
+          <span className="text-[0.7rem] text-[var(--text-faint)]">
+            Best streak: {analytics.bestStreak} days 🔥
           </span>
         </div>
 
-        <div className="rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink p-5 shadow-none">
-          <div className="flex items-center justify-between text-ink-muted mb-2">
-            <span className="text-xs font-semibold">Overdue Rate</span>
-            <AlertTriangle className="h-4 w-4 text-rose-500" />
+        <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-display">
+            <span>Overdue Rate</span>
+            <AlertTriangle className="w-4 h-4 text-rose-500" />
           </div>
-          <p className="text-3xl font-black text-rose-500">
+          <p className="font-mono text-3xl font-extrabold text-rose-500">
             {Math.round((overdue / total) * 100)}%
           </p>
-          <span className="text-[11px] text-rose-500 font-medium">
+          <span className="text-[0.7rem] text-rose-500 font-semibold">
             {overdue} overdue items
           </span>
         </div>
       </div>
 
-      {/* 2 Big Analytical Breakdown Cards */}
+      {/* 2 Big Analytic Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Subject Workload Distribution */}
-        <div className="rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink p-6 shadow-none space-y-4">
+        <div className="p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-xs space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-ink dark:text-white flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-indigo-500" />
+            <h3 className="font-display font-bold text-base text-[var(--text-main)] flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-indigo-500" />
               <span>Subject Workload Distribution</span>
             </h3>
-            <span className="text-xs text-ink-muted">{subjects.length} active subjects</span>
+            <span className="text-xs text-[var(--text-faint)] font-mono">{subjects.length} Subjects</span>
           </div>
 
           <div className="space-y-4">
@@ -114,23 +115,20 @@ export const AnalyticsView: React.FC = () => {
               return (
                 <div key={subject.id} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 truncate">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: subject.color }}
-                      />
-                      <span className="font-bold text-ink dark:text-bg truncate">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: subject.color }} />
+                      <span className="font-display font-semibold text-[var(--text-main)] truncate">
                         {subject.name}
                       </span>
                     </div>
-                    <span className="text-ink-muted dark:text-ink-muted font-medium flex-shrink-0">
+                    <span className="font-mono text-[var(--text-muted)]">
                       {subCompleted}/{subTasks.length} ({subPct}%)
                     </span>
                   </div>
 
-                  <div className="h-2 w-full rounded-full bg-ink-faint dark:bg-ink overflow-hidden">
+                  <div className="w-full h-2 rounded-full bg-[var(--bg-card-subtle)] overflow-hidden">
                     <div
-                      className="h-full rounded-full transition-all duration-300"
+                      className="h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${subPct}%`,
                         backgroundColor: subject.color
@@ -143,46 +141,46 @@ export const AnalyticsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Priority & Status Breakdown */}
-        <div className="rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink p-6 shadow-none space-y-4">
+        {/* Priority & Task Volume Grid */}
+        <div className="p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-xs space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-ink dark:text-white flex items-center gap-2">
-              <PieChart className="h-4 w-4 text-cyan-500" />
+            <h3 className="font-display font-bold text-base text-[var(--text-main)] flex items-center gap-2">
+              <PieChart className="w-4 h-4 text-purple-500" />
               <span>Priority & Task Volume</span>
             </h3>
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="p-4 rounded-none bg-rose-50/60 dark:bg-rose-950/30 border-[1.5px] border-rose-200/60 dark:border-rose-900/40">
-              <span className="text-xs font-bold text-rose-600 dark:text-rose-400 block mb-1">
+            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 space-y-1">
+              <span className="text-xs font-bold text-rose-600 dark:text-rose-400 block font-mono">
                 🔥 Urgent Priority
               </span>
-              <p className="text-2xl font-black text-ink dark:text-white">{urgentCount}</p>
-              <span className="text-[10px] text-ink-muted">Immediate action required</span>
+              <p className="font-mono text-3xl font-extrabold text-[var(--text-main)]">{urgentCount}</p>
+              <span className="text-[0.65rem] text-[var(--text-muted)]">Immediate action required</span>
             </div>
 
-            <div className="p-4 rounded-none bg-amber-50/60 dark:bg-amber-950/30 border-[1.5px] border-amber-200/60 dark:border-amber-900/40">
-              <span className="text-xs font-bold text-amber-600 dark:text-amber-400 block mb-1">
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-1">
+              <span className="text-xs font-bold text-amber-600 dark:text-amber-400 block font-mono">
                 ⚡ High Priority
               </span>
-              <p className="text-2xl font-black text-ink dark:text-white">{highCount}</p>
-              <span className="text-[10px] text-ink-muted">Due within upcoming days</span>
+              <p className="font-mono text-3xl font-extrabold text-[var(--text-main)]">{highCount}</p>
+              <span className="text-[0.65rem] text-[var(--text-muted)]">Due within 3 days</span>
             </div>
 
-            <div className="p-4 rounded-none bg-ink-faint dark:bg-ink/60 dark:bg-blue-950/30 border-[1.5px] border-ink-faint dark:border-ink-faint/60 dark:border-blue-900/40">
-              <span className="text-xs font-bold text-ink dark:text-bg dark:text-blue-400 block mb-1">
+            <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-1">
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 block font-mono">
                 🔷 Medium Priority
               </span>
-              <p className="text-2xl font-black text-ink dark:text-white">{mediumCount}</p>
-              <span className="text-[10px] text-ink-muted">Standard assignments</span>
+              <p className="font-mono text-3xl font-extrabold text-[var(--text-main)]">{mediumCount}</p>
+              <span className="text-[0.65rem] text-[var(--text-muted)]">Standard assignments</span>
             </div>
 
-            <div className="p-4 rounded-none bg-bg dark:bg-ink/50 border-[1.5px] border-ink-faint dark:border-ink-faint">
-              <span className="text-xs font-bold text-ink-muted dark:text-ink-muted block mb-1">
+            <div className="p-4 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] space-y-1">
+              <span className="text-xs font-bold text-[var(--text-muted)] block font-mono">
                 ◽ Low Priority
               </span>
-              <p className="text-2xl font-black text-ink dark:text-white">{lowCount}</p>
-              <span className="text-[10px] text-ink-muted">Optional / preparatory</span>
+              <p className="font-mono text-3xl font-extrabold text-[var(--text-main)]">{lowCount}</p>
+              <span className="text-[0.65rem] text-[var(--text-muted)]">Optional / preparatory</span>
             </div>
           </div>
         </div>

@@ -1,44 +1,184 @@
 import React from 'react';
 import { useTasks } from '../../context/TaskContext';
+import {
+  Bell,
+  Clock,
+  Zap,
+  Pin,
+  ChevronRight,
+  Flame,
+  CheckCircle2
+} from 'lucide-react';
 
-export const RightPanel: React.FC = () => {
-  const { announcements, notifications } = useTasks();
+interface RightPanelProps {
+  onNavigate?: (view: string) => void;
+}
+
+export const RightPanel: React.FC<RightPanelProps> = ({ onNavigate }) => {
+  const { announcements, notifications, tasks, exams, setIsNotificationDrawerOpen } = useTasks();
   const unreadNotifs = notifications.filter(n => !n.isRead).length;
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const urgentTasks = tasks
+    .filter(t => t.status !== 'completed' && t.status !== 'cancelled')
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    .slice(0, 3);
+
+  const upcomingExams = exams
+    .filter(e => e.examDate >= todayStr)
+    .sort((a, b) => a.examDate.localeCompare(b.examDate))
+    .slice(0, 2);
+
   return (
-    <aside className="hidden lg:flex flex-col border-l-[1.5px] border-ink p-8 gap-8 bg-bg dark:bg-ink overflow-y-auto">
-      <div>
-        <span className="mono block mb-6 text-ink dark:text-bg">Latest Notices</span>
-        
-        {announcements.slice(0, 2).map((notice, idx) => (
-          <div key={notice.id} className="border-b-[1.5px] border-ink-faint pb-6 mb-6">
-            <div className="flex justify-between items-baseline mb-2">
-              <span className="mono text-accent">{idx === 0 ? 'Pinned' : 'New'}</span>
-              <span className="mono text-ink-muted">{new Date(notice.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-            </div>
-            <h4 className="font-serif text-2xl mb-2 text-ink dark:text-bg">{notice.title}</h4>
-            <p className="text-sm text-ink-muted line-clamp-2">{notice.content}</p>
-            
-            <div className="flex items-center gap-3 mt-6">
-              <div className="w-8 h-8 border-[1.5px] border-ink bg-bg dark:bg-ink text-ink dark:text-bg flex items-center justify-center mono text-[0.6rem]">
-                CR
-              </div>
-              <div>
-                <div className="mono text-[0.7rem] text-ink dark:text-bg">{notice.authorName}</div>
-                <div className="mono text-[0.5rem] text-ink-muted">Verified</div>
-              </div>
-            </div>
+    <aside className="hidden xl:flex flex-col w-[320px] bg-[var(--bg-card)] border-l border-[var(--border-subtle)] p-5 gap-6 h-[calc(100vh-73px)] sticky top-[73px] overflow-y-auto">
+      {/* Focus Timer Quick Trigger Widget */}
+      <div className="p-4 rounded-2xl gradient-brand-bg text-white shadow-lg shadow-indigo-500/20 relative overflow-hidden group">
+        <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/10 blur-xl group-hover:scale-150 transition-transform" />
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[0.65rem] font-bold font-mono uppercase tracking-wider text-indigo-200">
+              Focus Booster
+            </span>
+            <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
           </div>
-        ))}
+          <h3 className="font-display font-bold text-base mb-1">Pomodoro Timer</h3>
+          <p className="text-xs text-indigo-100 mb-3 opacity-90">
+            Start a 25-min study sprint with zero distractions.
+          </p>
+          <button
+            onClick={() => onNavigate?.('focus')}
+            className="w-full py-2 px-3 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 font-bold text-xs flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-all active:scale-[0.98]"
+          >
+            <span>Launch Focus Mode</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
-      <div className="mt-auto border-[1.5px] border-ink p-6">
-        <span className="mono block text-ink dark:text-bg">Notification Center</span>
-        <p className="text-[0.7rem] mt-2 text-ink dark:text-bg">
-          You have ({unreadNotifs}) new unread alerts.
+      {/* Upcoming Exams & Urgent Deadlines */}
+      <div>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <h4 className="font-display font-bold text-sm text-[var(--text-main)]">
+              Urgent Deadlines
+            </h4>
+          </div>
+          <button
+            onClick={() => onNavigate?.('upcoming')}
+            className="text-[0.7rem] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+          >
+            View All
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {urgentTasks.length === 0 ? (
+            <div className="p-3 text-center rounded-xl bg-[var(--bg-card-subtle)] text-[var(--text-muted)] text-xs">
+              🎉 No urgent deadlines right now!
+            </div>
+          ) : (
+            urgentTasks.map(task => {
+              const isOverdue = task.dueDate < todayStr;
+              return (
+                <div
+                  key={task.id}
+                  onClick={() => onNavigate?.('tasks')}
+                  className="p-3 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] hover:border-indigo-500/30 cursor-pointer transition-all hover:scale-[1.01]"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[0.65rem] font-bold font-mono px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                      {task.subjectCode || 'General'}
+                    </span>
+                    <span className={`text-[0.65rem] font-mono font-semibold ${isOverdue ? 'text-rose-500' : 'text-[var(--text-muted)]'}`}>
+                      {isOverdue ? 'Overdue' : task.dueDate}
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-[var(--text-main)] truncate">
+                    {task.title}
+                  </p>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Latest Notices / Pinned Announcements */}
+      <div>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <div className="flex items-center gap-2">
+            <Pin className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <h4 className="font-display font-bold text-sm text-[var(--text-main)]">
+              Notice Board
+            </h4>
+          </div>
+          <button
+            onClick={() => onNavigate?.('announcements')}
+            className="text-[0.7rem] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+          >
+            Bulletin
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2.5">
+          {announcements.slice(0, 2).map((notice, idx) => (
+            <div
+              key={notice.id}
+              className="p-3.5 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] relative"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[0.6rem] font-bold font-mono px-2 py-0.5 rounded bg-purple-500/15 text-purple-600 dark:text-purple-400">
+                  {idx === 0 ? '📌 Pinned' : 'Notice'}
+                </span>
+                <span className="text-[0.65rem] font-mono text-[var(--text-faint)]">
+                  {new Date(notice.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+              <h5 className="font-display font-bold text-xs text-[var(--text-main)] mb-1 line-clamp-1">
+                {notice.title}
+              </h5>
+              <p className="text-[0.7rem] text-[var(--text-muted)] line-clamp-2">
+                {notice.content}
+              </p>
+              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[var(--border-subtle)]">
+                <div className="w-5 h-5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white flex items-center justify-center text-[0.55rem] font-bold">
+                  CR
+                </div>
+                <span className="text-[0.65rem] font-medium text-[var(--text-muted)]">
+                  {notice.authorName}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Notification Center Widget */}
+      <div className="mt-auto p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <span className="font-display font-bold text-xs text-slate-900 dark:text-white">
+              Alerts & Updates
+            </span>
+          </div>
+          {unreadNotifs > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[0.6rem] font-mono font-bold">
+              {unreadNotifs} Unread
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
+          {unreadNotifs > 0
+            ? `You have ${unreadNotifs} pending study alerts.`
+            : 'All caught up! No unread notifications.'}
         </p>
-        <button className="w-full bg-ink dark:bg-bg text-bg dark:text-ink mono text-[0.65rem] p-2 mt-4 hover:bg-accent dark:hover:bg-accent transition-colors">
-          View All
+        <button
+          onClick={() => setIsNotificationDrawerOpen(true)}
+          className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-slate-900 dark:text-slate-100 font-semibold text-xs transition-all cursor-pointer shadow-2xs"
+        >
+          Open Notification Center
         </button>
       </div>
     </aside>

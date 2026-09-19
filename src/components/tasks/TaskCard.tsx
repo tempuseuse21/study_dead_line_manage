@@ -56,77 +56,69 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, compact = false }) => 
     <div
       id={`task-card-${task.id}`}
       onClick={() => setSelectedTask(task)}
-      className={`group relative flex flex-col rounded-[22px] border-[1.5px] transition-all duration-150 cursor-pointer ${
+      className={`group relative flex flex-col rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs ${
         task.isPinned
-          ? 'ring-2 ring-amber-500/30 border-amber-300 dark:border-amber-700/60 bg-amber-500/5 dark:bg-amber-950/15 shadow-none'
+          ? 'bg-amber-500/5 border-amber-500/30 hover:border-amber-500/50'
           : countdown.isOverdue
-          ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40 shadow-none hover:shadow-none hover:border-rose-300'
-          : 'bg-bg dark:bg-ink border-ink-faint dark:border-ink-faint shadow-none hover:shadow-none hover:border-blue-400 dark:hover:border-blue-700'
+          ? 'bg-rose-500/5 border-rose-500/30 hover:border-rose-500/50'
+          : 'bg-[var(--bg-card)] border-[var(--border-subtle)] hover:border-indigo-500/40 hover:shadow-md hover:-translate-y-0.5'
       } ${compact ? 'p-3.5' : 'p-4 sm:p-5'}`}
     >
-      {/* Top Meta: Subject, Pinned/Verified, Priority, Countdown */}
-      <div className="flex items-center justify-between gap-2 mb-2.5">
-        <div className="flex flex-wrap items-center gap-1.5 truncate">
+      {/* Header Meta: Subject, Pinned/Official Badges, Priority, Countdown */}
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {task.isPinned && (
-            <span className="inline-flex items-center gap-1 rounded-none bg-amber-100 dark:bg-amber-950 px-2 py-0.5 text-[10px] font-black text-amber-700 dark:text-amber-300 border-[1.5px] border-amber-300 dark:border-amber-800">
-              <Pin className="h-3 w-3 fill-amber-500" />
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-2 py-0.5 text-[0.65rem] font-bold font-mono text-amber-600 dark:text-amber-400">
+              <Pin className="w-3 h-3 fill-amber-500" />
               <span>PINNED</span>
             </span>
           )}
 
           {task.isVerifiedOfficial && (
-            <span className="inline-flex items-center gap-1 rounded-none bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[10px] font-black text-emerald-700 dark:text-emerald-300 border-[1.5px] border-emerald-300 dark:border-emerald-800">
-              <ShieldCheck className="h-3 w-3" />
+            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-2 py-0.5 text-[0.65rem] font-bold font-mono text-emerald-600 dark:text-emerald-400">
+              <ShieldCheck className="w-3 h-3" />
               <span>OFFICIAL</span>
             </span>
           )}
 
           {subject && (
             <span
-              className="inline-flex items-center gap-1.5 rounded-none px-2.5 py-0.5 text-[11px] font-bold border-[1.5px] truncate"
+              className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[0.65rem] font-mono font-bold truncate"
               style={{
                 backgroundColor: `${subject.color}15`,
-                color: subject.color,
-                borderColor: `${subject.color}30`
+                color: subject.color
               }}
             >
-              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: subject.color }} />
-              <span className="truncate max-w-[120px] sm:max-w-[180px]">{subject.code} • {subject.name}</span>
-            </span>
-          )}
-
-          {task.recurring && task.recurring !== 'none' && (
-            <span className="inline-flex items-center gap-1 rounded-none bg-ink-faint dark:bg-ink dark:bg-blue-950/50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-400 border-[1.5px] border-ink-faint dark:border-ink-faint/40">
-              <Repeat className="h-3 w-3" />
-              <span className="capitalize">{task.recurring}</span>
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: subject.color }} />
+              <span className="truncate">{subject.code}</span>
             </span>
           )}
         </div>
 
         {/* Priority Badge */}
         <span
-          className={`inline-flex items-center gap-1 rounded-none px-2.5 py-0.5 text-[11px] font-bold border-[1.5px] flex-shrink-0 ${priorityInfo.className}`}
+          className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.65rem] font-mono font-bold flex-shrink-0 ${priorityInfo.className}`}
         >
-          <span className={`h-1.5 w-1.5 rounded-full ${priorityInfo.dotColor}`} />
+          <span className={`w-1.5 h-1.5 rounded-full ${priorityInfo.dotColor}`} />
           <span>{priorityInfo.label}</span>
         </span>
       </div>
 
-      {/* Title & Description with Academic Subject Icon */}
+      {/* Main Content */}
       <div className="flex items-start gap-3 mb-3">
         <div
-          className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-none text-white shadow-none"
-          style={{ backgroundColor: subject ? subject.color : '#3b82f6' }}
+          className="mt-0.5 w-9 h-9 rounded-xl flex flex-shrink-0 items-center justify-center text-white shadow-xs"
+          style={{ backgroundColor: subject ? subject.color : '#6366f1' }}
         >
-          <SubIcon className="h-4 w-4" />
+          <SubIcon className="w-4.5 h-4.5" />
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm sm:text-base font-bold leading-snug truncate text-ink dark:text-bg group-hover:text-ink dark:text-bg dark:group-hover:text-blue-400 transition-colors">
+          <h3 className="font-display font-semibold text-sm sm:text-base text-[var(--text-main)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
             {task.title}
           </h3>
           {task.description && !compact && (
-            <p className="mt-1 text-xs text-ink-muted dark:text-ink-muted line-clamp-2 leading-relaxed">
+            <p className="mt-1 text-xs text-[var(--text-muted)] line-clamp-2 leading-relaxed">
               {task.description}
             </p>
           )}
@@ -135,60 +127,57 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, compact = false }) => 
 
       {/* Dependency Warning */}
       {hasIncompleteDependencies && (
-        <div className="mb-2.5 flex items-center gap-1.5 rounded-none bg-amber-500/10 border-[1.5px] border-amber-500/20 px-2.5 py-1 text-[11px] text-amber-700 dark:text-amber-400 font-medium">
-          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-          <span className="truncate">Prerequisite tasks specified</span>
+        <div className="mb-3 flex items-center gap-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="truncate">Prerequisite tasks incomplete</span>
         </div>
       )}
 
-      {/* Mileinks & Subject Info Banner */}
-      <div className="mb-3">
-        <div className="flex items-center justify-between text-[11px] font-medium text-ink-muted dark:text-ink-muted mb-1">
-          <div className="flex items-center gap-2">
-            {totalSubtasks > 0 ? (
-              <span className="inline-flex items-center gap-1 font-semibold text-ink-muted dark:text-ink-muted">
-                <Layers className="h-3 w-3 text-ink dark:text-bg" />
-                {totalSubtasks} Mileink Step{totalSubtasks === 1 ? '' : 's'}
-              </span>
-            ) : (
-              <span className="text-[11px] text-ink-muted">Class Assignment</span>
-            )}
+      {/* Progress & Subtasks */}
+      {totalSubtasks > 0 && (
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-xs text-[var(--text-muted)] mb-1">
+            <span className="flex items-center gap-1 font-mono text-[0.65rem]">
+              <Layers className="w-3 h-3" />
+              {totalSubtasks} Subtask{totalSubtasks === 1 ? '' : 's'}
+            </span>
+            <span className="font-mono text-[0.65rem]">{task.progress}%</span>
           </div>
-          <span className="text-[10px] text-ink-muted font-medium">
-            Shared Class Board
-          </span>
+          <div className="w-full h-1.5 rounded-full bg-[var(--bg-card-subtle)] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300"
+              style={{ width: `${task.progress}%` }}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Bottom Footer: Live Countdown Pill & Meta */}
-      <div className="mt-auto flex items-center justify-between gap-2 pt-2.5 border-t-[1.5px] border-ink-faint dark:border-ink-faint/80 text-xs">
-        {/* Countdown Badge */}
+      {/* Card Footer */}
+      <div className="mt-auto flex items-center justify-between gap-2 pt-3 border-t border-[var(--border-subtle)] text-xs">
         <div
-          className={`inline-flex items-center gap-1.5 rounded-none px-2.5 py-1 text-[11px] font-bold border-[1.5px] transition-colors ${countdown.badgeClass}`}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[0.65rem] font-mono font-bold border transition-colors ${countdown.badgeClass}`}
         >
-          <Clock className="h-3 w-3" />
+          <Clock className="w-3 h-3" />
           <span>{countdown.text}</span>
         </div>
 
-        {/* Right Meta */}
-        <div className="flex items-center gap-2 text-ink-muted">
+        <div className="flex items-center gap-3 text-[var(--text-muted)]">
           {task.attachments?.length > 0 && (
-            <span className="flex items-center gap-0.5 text-[11px] text-ink-muted dark:text-ink-muted" title="Attachments">
-              <Paperclip className="h-3.5 w-3.5" />
-              <span>{task.attachments.length}</span>
+            <span className="flex items-center gap-1 text-xs" title="Attachments">
+              <Paperclip className="w-3.5 h-3.5" />
+              <span className="font-mono text-[0.65rem]">{task.attachments.length}</span>
             </span>
           )}
 
           {task.comments?.length > 0 && (
-            <span className="flex items-center gap-0.5 text-[11px] text-ink-muted dark:text-ink-muted" title="Comments">
-              <MessageSquare className="h-3.5 w-3.5" />
-              <span>{task.comments.length}</span>
+            <span className="flex items-center gap-1 text-xs" title="Comments">
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span className="font-mono text-[0.65rem]">{task.comments.length}</span>
             </span>
           )}
 
-          {/* Due date formatted */}
-          <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-ink-muted dark:text-ink-muted font-medium">
-            <Calendar className="h-3 w-3 text-ink-muted" />
+          <span className="hidden sm:inline-flex items-center gap-1 text-[0.7rem] font-medium">
+            <Calendar className="w-3 h-3 text-[var(--text-faint)]" />
             {formatDateDisplay(task.dueDate, task.dueTime)}
           </span>
         </div>

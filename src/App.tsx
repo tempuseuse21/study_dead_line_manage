@@ -7,6 +7,7 @@ import { RightPanel } from './components/layout/RightPanel';
 import { MobileNav } from './components/layout/MobileNav';
 import { DashboardView } from './components/dashboard/DashboardView';
 import { TasksView } from './components/tasks/TasksView';
+import { CompletedTasksView } from './components/tasks/CompletedTasksView';
 import { UpcomingDeadlinesView } from './components/deadlines/UpcomingDeadlinesView';
 import { ThisWeekView } from './components/deadlines/ThisWeekView';
 import { OverdueView } from './components/deadlines/OverdueView';
@@ -31,9 +32,9 @@ const AppContent: React.FC = () => {
       case 'dashboard':
         return <DashboardView onNavigate={setActiveView} />;
       case 'tasks':
-        return <TasksView initialFilter="all" />;
+        return <TasksView />;
       case 'completed':
-        return <TasksView initialFilter="completed" />;
+        return <CompletedTasksView />;
       case 'upcoming':
         return <UpcomingDeadlinesView />;
       case 'this_week':

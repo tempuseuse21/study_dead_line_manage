@@ -21,7 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
   const { theme, toggleTheme } = useTheme();
   const {
     setIsCreateTaskModalOpen,
-    setIsSearchOpen,
+    setIsSearchModalOpen,
     notifications,
     analytics,
     setIsNotificationDrawerOpen
@@ -30,21 +30,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <header className="sticky top-0 z-30 flex w-full items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--glass-bg)] backdrop-blur-md px-4 sm:px-8 py-3.5 transition-all">
+    <header className="sticky top-0 z-30 flex w-full items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--glass-bg)] backdrop-blur-md px-3 sm:px-8 py-3.5 transition-all">
       {/* Brand Logo & Name */}
       <div
         onClick={() => onNavigate('dashboard')}
-        className="flex items-center gap-3 cursor-pointer group"
+        className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group"
       >
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-          <Sparkles className="w-5.5 h-5.5" />
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+          <Sparkles className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
         </div>
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display font-bold text-lg sm:text-xl tracking-tight text-[var(--text-main)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <h1 className="font-display font-bold text-base sm:text-xl tracking-tight text-[var(--text-main)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
               Study<span className="gradient-text">Sync</span>
             </h1>
-            <span className="text-[0.65rem] font-mono font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <span className="text-[0.6rem] sm:text-[0.65rem] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
               Academic OS
             </span>
           </div>
@@ -55,14 +55,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
       </div>
 
       {/* Global Actions & Controls */}
-      <div className="flex items-center gap-2.5 sm:gap-4">
+      <div className="flex items-center gap-1.5 sm:gap-4">
         {/* Quick Search Bar Trigger */}
         <button
-          onClick={() => setIsSearchOpen(true)}
-          className="hidden md:flex items-center gap-3 px-3.5 py-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-indigo-500/30 text-xs font-medium transition-all"
+          onClick={() => setIsSearchModalOpen(true)}
+          className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-indigo-500/30 text-xs font-medium transition-all flex items-center gap-2 cursor-pointer"
+          title="Search Tasks & Notices"
         >
-          <Search className="w-3.5 h-3.5 text-[var(--text-faint)]" />
-          <span>Search tasks, exams, notes...</span>
+          <Search className="w-4 h-4 text-[var(--text-faint)]" />
+          <span className="hidden md:inline">Search tasks, notices...</span>
           <kbd className="hidden lg:inline-block px-1.5 py-0.5 text-[0.65rem] font-mono rounded bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-faint)]">
             Ctrl+K
           </kbd>

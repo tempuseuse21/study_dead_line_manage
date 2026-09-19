@@ -166,7 +166,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ onNavigate }) => {
                   </p>
                   <div className="mt-1.5 flex items-center justify-between text-[0.65rem] text-slate-600 dark:text-slate-400">
                     <span>Syllabus Covered</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">{exam.syllabusCoverage || 0}%</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{exam.preparationPercent || 0}%</span>
                   </div>
                 </div>
               );

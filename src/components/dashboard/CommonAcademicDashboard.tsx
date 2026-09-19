@@ -197,11 +197,11 @@ export const CommonAcademicDashboard: React.FC<CommonAcademicDashboardProps> = (
         </div>
 
         {/* 2. Top Metric Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t-[1.5px] border-ink-faint dark:border-ink-faint/80">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-[var(--border-subtle)]">
           {/* Due Today */}
           <div
             onClick={() => onNavigate('tasks')}
-            className="cursor-pointer rounded-none bg-amber-500/10 border-[1.5px] border-amber-500/20 p-3.5 hover:border-amber-500/40 transition-all"
+            className="cursor-pointer rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 hover:border-amber-500/40 transition-all"
           >
             <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mb-1">
               <span className="text-[11px] font-bold uppercase tracking-wider">Due Today</span>
@@ -211,59 +211,62 @@ export const CommonAcademicDashboard: React.FC<CommonAcademicDashboardProps> = (
               {tierImmediate.length}
             </p>
             <span className="text-[11px] text-amber-700 dark:text-amber-300 font-medium">
-              {tierImmediate.length > 0 ? 'Urgent submissions' : 'All clear for today'}
+              {tierImmediate.length > 0 ? 'Urgent class submissions' : 'All clear for today'}
             </span>
           </div>
 
-          {/* Pending Tasks */}
+          {/* Active Deliverables */}
           <div
             onClick={() => onNavigate('tasks')}
-            className="cursor-pointer rounded-none bg-ink-faint dark:bg-ink/70 dark:bg-blue-950/30 border-[1.5px] border-ink-faint dark:border-ink-faint/80 dark:border-blue-900/60 p-3.5 hover:border-blue-400 transition-all"
+            className="cursor-pointer rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 hover:border-indigo-500/40 transition-all"
           >
-            <div className="flex items-center justify-between text-ink dark:text-bg dark:text-blue-400 mb-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Pending Tasks</span>
-              <CheckSquare className="h-4 w-4 text-ink dark:text-bg" />
+            <div className="flex items-center justify-between text-[var(--text-main)] mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Active Deliverables</span>
+              <CheckSquare className="h-4 w-4 text-indigo-500" />
             </div>
-            <p className="text-2xl font-black text-ink dark:text-bg dark:text-blue-400">
-              {analytics.pendingTasks}
+            <p className="text-2xl font-black text-[var(--text-main)]">
+              {activePendingTasks.length}
             </p>
-            <span className="text-[11px] text-ink dark:text-bg dark:text-blue-400 font-medium">
-              Active deliverables
+            <span className="text-[11px] text-[var(--text-muted)] font-medium">
+              Pending assignments & labs
             </span>
           </div>
 
-          {/* Overdue Alert */}
+          {/* Overdue Submissions */}
           <div
-            onClick={() => onNavigate('tasks')}
-            className={`cursor-pointer rounded-none border-[1.5px] p-3.5 transition-all ${
+            onClick={() => onNavigate('completed')}
+            className={`cursor-pointer rounded-2xl border p-4 transition-all ${
               overdueTasks.length > 0
                 ? 'bg-rose-500/10 border-rose-500/30 hover:border-rose-500/50'
-                : 'bg-bg/70 dark:bg-ink/40 border-ink-faint/80 dark:border-ink-faint'
+                : 'bg-[var(--bg-card)] border-[var(--border-subtle)]'
             }`}
           >
-            <div className="flex items-center justify-between text-ink-muted mb-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Overdue</span>
-              <AlertTriangle className={`h-4 w-4 ${overdueTasks.length > 0 ? 'text-rose-500' : 'text-ink-muted'}`} />
+            <div className="flex items-center justify-between text-[var(--text-muted)] mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Shifted to Completed</span>
+              <AlertTriangle className={`h-4 w-4 ${overdueTasks.length > 0 ? 'text-rose-500' : 'text-emerald-500'}`} />
             </div>
-            <p className={`text-2xl font-black ${overdueTasks.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-ink dark:text-white'}`}>
+            <p className={`text-2xl font-black ${overdueTasks.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
               {overdueTasks.length}
             </p>
-            <span className="text-[11px] font-medium text-ink-muted dark:text-ink-muted">
-              {overdueTasks.length > 0 ? 'Requires attention' : '0 overdue items 🎉'}
+            <span className="text-[11px] font-medium text-[var(--text-muted)]">
+              {overdueTasks.length > 0 ? 'Past deadline tasks archived' : '0 overdue items 🎉'}
             </span>
           </div>
 
-          {/* Completion Pace */}
-          <div className="rounded-none bg-bg/70 dark:bg-ink/40 border-[1.5px] border-ink-faint/80 dark:border-ink-faint p-3.5">
-            <div className="flex items-center justify-between text-ink-muted mb-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Completion Rate</span>
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
+          {/* 5 Core Curriculum Subjects */}
+          <div
+            onClick={() => onNavigate('subjects')}
+            className="cursor-pointer rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-4 hover:border-indigo-500/40 transition-all"
+          >
+            <div className="flex items-center justify-between text-[var(--text-muted)] mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Curriculum</span>
+              <BookOpen className="h-4 w-4 text-indigo-500" />
             </div>
-            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-              {analytics.completionRate}%
+            <p className="text-2xl font-black text-[var(--text-main)]">
+              {subjects.length} Subjects
             </p>
-            <span className="text-[11px] text-ink-muted dark:text-ink-muted font-medium">
-              {analytics.completedTasks} of {tasks.length} tasks completed
+            <span className="text-[11px] text-[var(--text-muted)] font-medium">
+              Core academic courses
             </span>
           </div>
         </div>

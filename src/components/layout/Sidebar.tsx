@@ -110,23 +110,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
         ))}
       </nav>
 
-      {/* Progress Footer Card */}
-      <div className="mt-4 p-3.5 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/20">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-            <span className="text-xs font-semibold text-[var(--text-main)]">Daily Target</span>
-          </div>
-          <span className="text-xs font-bold font-mono text-indigo-600 dark:text-indigo-400">
-            {analytics.completionRate}%
-          </span>
+      {/* Common Academic Footer Card */}
+      <div className="mt-4 p-3.5 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)]">
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <span className="text-xs font-bold text-[var(--text-main)]">Academic Portal</span>
         </div>
-        <div className="w-full h-2 rounded-full bg-[var(--bg-card-subtle)] overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-500"
-            style={{ width: `${Math.max(5, analytics.completionRate)}%` }}
-          />
-        </div>
+        <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+          Common batch portal for 5 core subjects & class announcements.
+        </p>
       </div>
     </aside>
   );

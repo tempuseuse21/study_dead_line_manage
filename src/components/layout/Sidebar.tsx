@@ -9,16 +9,9 @@ import {
   GraduationCap,
   BookOpen,
   Bell,
-  CalendarCheck,
   Zap,
-  RotateCcw,
-  BarChart3,
-  Target,
-  FileText,
-  Bookmark,
   Settings,
-  Sparkles,
-  Flame
+  Sparkles
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -39,15 +32,12 @@ interface NavSection {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
-  const { tasks, subjects, analytics, exams, revisionTopics, unreadAnnouncementsCount, notifications } = useTasks();
+  const { tasks, subjects, analytics, exams, unreadAnnouncementsCount } = useTasks();
 
   const todayStr = new Date().toISOString().split('T')[0];
   const overdueTasks = tasks.filter(t => t.dueDate < todayStr && t.status !== 'completed' && t.status !== 'cancelled').length;
   const dueTodayCount = tasks.filter(t => t.dueDate === todayStr && t.status !== 'completed').length;
   const upcomingExamCount = exams.filter(e => e.examDate >= todayStr).length;
-  const revisionDueCount = revisionTopics.filter(t =>
-    t.nextRevisionDue && t.nextRevisionDue <= todayStr && t.status !== 'mastered'
-  ).length;
 
   const sections: NavSection[] = [
     {
@@ -60,28 +50,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
       ]
     },
     {
-      title: 'Academic',
+      title: 'Academic & Focus',
       items: [
         { id: 'exams', label: 'Exams', icon: GraduationCap, badge: upcomingExamCount || undefined },
         { id: 'subjects', label: 'Subjects', icon: BookOpen },
-        { id: 'announcements', label: 'Notice Board', icon: Bell, badge: unreadAnnouncementsCount || undefined }
-      ]
-    },
-    {
-      title: 'Study Tools',
-      items: [
-        { id: 'planner', label: 'Daily Planner', icon: CalendarCheck },
-        { id: 'focus', label: 'Focus Mode', icon: Zap },
-        { id: 'revision', label: 'Revision', icon: RotateCcw, badge: revisionDueCount || undefined },
-        { id: 'analytics', label: 'Analytics', icon: BarChart3 }
-      ]
-    },
-    {
-      title: 'Library',
-      items: [
-        { id: 'goals', label: 'Goals', icon: Target },
-        { id: 'notes', label: 'Notes', icon: FileText },
-        { id: 'resources', label: 'Resources', icon: Bookmark }
+        { id: 'announcements', label: 'Notice Board', icon: Bell, badge: unreadAnnouncementsCount || undefined },
+        { id: 'focus', label: 'Focus Mode', icon: Zap }
       ]
     },
     {

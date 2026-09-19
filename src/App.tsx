@@ -20,15 +20,8 @@ import { TaskFormModal } from './components/tasks/TaskFormModal';
 import { NotificationDrawer } from './components/notifications/NotificationDrawer';
 import { NotificationToastContainer } from './components/notifications/NotificationToastContainer';
 import { GlobalSearchModal } from './components/search/GlobalSearchModal';
-import { AnalyticsView } from './components/analytics/AnalyticsView';
 import { SettingsView } from './components/settings/SettingsView';
-// New modules
 import { ExamsView } from './components/exams/ExamsView';
-import { GoalsView } from './components/goals/GoalsView';
-import { NotesView } from './components/notes/NotesView';
-import { ResourcesView } from './components/resources/ResourcesView';
-import { RevisionView } from './components/revision/RevisionView';
-import { PlannerView } from './components/planner/PlannerView';
 
 const AppContent: React.FC = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -53,23 +46,10 @@ const AppContent: React.FC = () => {
         return <AnnouncementsView onNavigate={setActiveView} />;
       case 'focus':
         return <FocusModeView />;
-      case 'analytics':
-        return <AnalyticsView />;
-      case 'settings':
-        return <SettingsView />;
-      // New modules
       case 'exams':
         return <ExamsView />;
-      case 'goals':
-        return <GoalsView />;
-      case 'notes':
-        return <NotesView />;
-      case 'resources':
-        return <ResourcesView />;
-      case 'revision':
-        return <RevisionView />;
-      case 'planner':
-        return <PlannerView />;
+      case 'settings':
+        return <SettingsView />;
       default:
         return <DashboardView onNavigate={setActiveView} />;
     }

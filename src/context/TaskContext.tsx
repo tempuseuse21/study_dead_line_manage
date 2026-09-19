@@ -360,11 +360,12 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!matchTitle && !matchDesc && !matchSubject && !matchTags) return false;
         }
 
-        if (filters.quickFilter === 'today' && task.dueDate !== todayStr) return false;
-        if (filters.quickFilter === 'tomorrow' && task.dueDate !== tomorrowStr) return false;
-        if (filters.quickFilter === 'this_week' && (task.dueDate < todayStr || task.dueDate > endOfWeekStr)) return false;
+        if (filters.quickFilter === 'all' && task.status === 'completed') return false;
+        if (filters.quickFilter === 'today' && (task.dueDate !== todayStr || task.status === 'completed')) return false;
+        if (filters.quickFilter === 'tomorrow' && (task.dueDate !== tomorrowStr || task.status === 'completed')) return false;
+        if (filters.quickFilter === 'this_week' && (task.dueDate < todayStr || task.dueDate > endOfWeekStr || task.status === 'completed')) return false;
         if (filters.quickFilter === 'overdue' && !(task.status === 'overdue' || (task.dueDate < todayStr && task.status !== 'completed'))) return false;
-        if (filters.quickFilter === 'high_priority' && task.priority !== 'high' && task.priority !== 'urgent') return false;
+        if (filters.quickFilter === 'high_priority' && (task.priority !== 'high' && task.priority !== 'urgent' || task.status === 'completed')) return false;
         if (filters.quickFilter === 'completed' && task.status !== 'completed') return false;
 
         return true;

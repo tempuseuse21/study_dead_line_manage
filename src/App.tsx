@@ -31,7 +31,9 @@ const AppContent: React.FC = () => {
       case 'dashboard':
         return <DashboardView onNavigate={setActiveView} />;
       case 'tasks':
-        return <TasksView />;
+        return <TasksView initialFilter="all" />;
+      case 'completed':
+        return <TasksView initialFilter="completed" />;
       case 'upcoming':
         return <UpcomingDeadlinesView />;
       case 'this_week':

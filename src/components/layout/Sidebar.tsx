@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils';
 import {
   LayoutDashboard,
   CheckSquare,
+  CheckCircle2,
   Calendar,
   Bell,
   Zap,
@@ -31,12 +32,16 @@ interface NavSection {
 export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
   const { tasks, analytics, unreadAnnouncementsCount } = useTasks();
 
+  const completedCount = tasks.filter(t => t.status === 'completed').length;
+  const activeCount = tasks.filter(t => t.status !== 'completed').length;
+
   const sections: NavSection[] = [
     {
       title: 'Overview',
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'tasks', label: 'All Tasks', icon: CheckSquare, badge: tasks.filter(t => t.status !== 'completed').length },
+        { id: 'tasks', label: 'Active Tasks', icon: CheckSquare, badge: activeCount },
+        { id: 'completed', label: 'Completed Tasks', icon: CheckCircle2, badge: completedCount || undefined },
         { id: 'calendar', label: 'Calendar', icon: Calendar }
       ]
     },

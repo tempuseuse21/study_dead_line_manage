@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   List,
   LayoutGrid,
@@ -16,7 +16,11 @@ import { Priority, TaskStatus } from '../../types';
 import { useTasks } from '../../context/TaskContext';
 import { TaskCard } from './TaskCard';
 
-export const TasksView: React.FC = () => {
+interface TasksViewProps {
+  initialFilter?: 'all' | 'today' | 'tomorrow' | 'this_week' | 'overdue' | 'high_priority' | 'completed';
+}
+
+export const TasksView: React.FC<TasksViewProps> = ({ initialFilter }) => {
   const {
     filteredTasks,
     tasks,
@@ -30,13 +34,20 @@ export const TasksView: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
+  useEffect(() => {
+    if (initialFilter) {
+      setFilters(prev => ({ ...prev, quickFilter: initialFilter }));
+    }
+  }, [initialFilter, setFilters]);
+
   const quickFilterTabs: { id: typeof filters.quickFilter; label: string }[] = [
-    { id: 'all', label: 'All Tasks' },
+    { id: 'all', label: 'Active Tasks' },
     { id: 'today', label: 'Due Today' },
     { id: 'tomorrow', label: 'Due Tomorrow' },
     { id: 'this_week', label: 'This Week' },
     { id: 'overdue', label: 'Overdue' },
-    { id: 'high_priority', label: 'High Priority' }
+    { id: 'high_priority', label: 'High Priority' },
+    { id: 'completed', label: 'Completed Tasks' }
   ];
 
   const kanbanColumns: { status: TaskStatus; label: string; dotColor: string }[] = [
@@ -46,19 +57,27 @@ export const TasksView: React.FC = () => {
     { status: 'completed', label: 'Completed', dotColor: 'bg-emerald-500' }
   ];
 
+  const isCompletedView = filters.quickFilter === 'completed';
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            {isCompletedView ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+            ) : (
+              <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            )}
             <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-main)]">
-              Tasks & Coursework
+              {isCompletedView ? 'Completed Tasks Archive' : 'Tasks & Coursework'}
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-[var(--text-muted)]">
-            Manage your study assignments, track progress, and organize deadlines.
+            {isCompletedView
+              ? 'Archive of all finished tasks, completed deadlines, and verified submissions.'
+              : 'Manage your active study assignments, track progress, and organize deadlines.'}
           </p>
         </div>
 

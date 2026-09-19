@@ -66,20 +66,20 @@ export const RightPanel: React.FC<RightPanelProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Urgent Deadlines */}
+      {/* Urgent Tasks */}
       <div>
         <div className="flex items-center justify-between mb-2.5 px-1">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white">
-              Urgent Deadlines
+              Urgent Tasks
             </h4>
           </div>
           <button
-            onClick={() => onNavigate?.('upcoming')}
+            onClick={() => onNavigate?.('tasks')}
             className="text-[0.7rem] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
           >
-            View All
+            View Tasks
           </button>
         </div>
 

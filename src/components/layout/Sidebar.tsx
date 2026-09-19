@@ -4,10 +4,7 @@ import { cn } from '../../lib/utils';
 import {
   LayoutDashboard,
   CheckSquare,
-  Clock,
   Calendar,
-  GraduationCap,
-  BookOpen,
   Bell,
   Zap,
   Settings,
@@ -32,12 +29,7 @@ interface NavSection {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
-  const { tasks, subjects, analytics, exams, unreadAnnouncementsCount } = useTasks();
-
-  const todayStr = new Date().toISOString().split('T')[0];
-  const overdueTasks = tasks.filter(t => t.dueDate < todayStr && t.status !== 'completed' && t.status !== 'cancelled').length;
-  const dueTodayCount = tasks.filter(t => t.dueDate === todayStr && t.status !== 'completed').length;
-  const upcomingExamCount = exams.filter(e => e.examDate >= todayStr).length;
+  const { tasks, analytics, unreadAnnouncementsCount } = useTasks();
 
   const sections: NavSection[] = [
     {
@@ -45,15 +37,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'tasks', label: 'All Tasks', icon: CheckSquare, badge: tasks.filter(t => t.status !== 'completed').length },
-        { id: 'upcoming', label: 'Deadlines', icon: Clock, badge: overdueTasks > 0 ? `${overdueTasks} Overdue` : dueTodayCount || undefined },
         { id: 'calendar', label: 'Calendar', icon: Calendar }
       ]
     },
     {
       title: 'Academic & Focus',
       items: [
-        { id: 'exams', label: 'Exams', icon: GraduationCap, badge: upcomingExamCount || undefined },
-        { id: 'subjects', label: 'Subjects', icon: BookOpen },
         { id: 'announcements', label: 'Notice Board', icon: Bell, badge: unreadAnnouncementsCount || undefined },
         { id: 'focus', label: 'Focus Mode', icon: Zap }
       ]
@@ -101,11 +90,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
                     {item.badge !== undefined && item.badge !== 0 && (
                       <span className={cn(
                         'text-[0.65rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 font-mono transition-all',
-                        item.id === 'upcoming' && overdueTasks > 0
-                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 animate-pulse'
-                          : isActive
-                            ? 'bg-indigo-600 text-white dark:bg-indigo-500'
-                            : 'bg-[var(--bg-card-subtle)] text-[var(--text-muted)] group-hover:bg-indigo-500/10 group-hover:text-indigo-600'
+                        isActive
+                          ? 'bg-indigo-600 text-white dark:bg-indigo-500'
+                          : 'bg-[var(--bg-card-subtle)] text-[var(--text-muted)] group-hover:bg-indigo-500/10 group-hover:text-indigo-600'
                       )}>
                         {item.badge}
                       </span>
@@ -117,39 +104,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
           </div>
         ))}
       </nav>
-
-      {/* Quick Subject Shortcuts */}
-      <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
-        <div className="flex items-center justify-between px-3 mb-2">
-          <span className="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--text-faint)] font-mono">
-            Subjects
-          </span>
-          <button
-            onClick={() => onNavigate('subjects')}
-            className="text-[0.7rem] text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
-          >
-            View All
-          </button>
-        </div>
-        <div className="flex flex-col gap-1">
-          {subjects.slice(0, 4).map(subject => (
-            <button
-              key={subject.id}
-              onClick={() => onNavigate('subjects')}
-              className="w-full px-3 py-1.5 rounded-lg text-xs flex items-center justify-between text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-subtle)] transition-colors"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-xs"
-                  style={{ backgroundColor: subject.color }}
-                />
-                <span className="font-medium truncate">{subject.code}</span>
-              </div>
-              <span className="text-[0.65rem] font-mono text-[var(--text-faint)]">{subject.credits} CR</span>
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Progress Footer Card */}
       <div className="mt-4 p-3.5 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/20">

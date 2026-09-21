@@ -69,14 +69,14 @@ export const AnalyticsView: React.FC = () => {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-xs space-y-2">
           <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-display">
-            <span>Study Streak</span>
-            <Flame className="w-4 h-4 text-amber-500" />
+            <span>Total Focus Time</span>
+            <Clock className="w-4 h-4 text-purple-500" />
           </div>
-          <p className="font-mono text-3xl font-extrabold text-amber-500">
-            {analytics.currentStreak} Days
+          <p className="font-mono text-3xl font-extrabold text-purple-500">
+            {Math.round(analytics.totalFocusMinutes / 60)}h {analytics.totalFocusMinutes % 60}m
           </p>
           <span className="text-[0.7rem] text-[var(--text-faint)]">
-            Best streak: {analytics.bestStreak} days 🔥
+            Cumulative focused study sessions
           </span>
         </div>
 

@@ -9,7 +9,8 @@ import {
   Moon,
   Flame,
   Bell,
-  CheckCircle2
+  CheckCircle2,
+  Database
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -24,7 +25,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
     setIsSearchModalOpen,
     notifications,
     analytics,
-    setIsNotificationDrawerOpen
+    setIsNotificationDrawerOpen,
+    isSupabaseConnected
   } = useTasks();
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -47,6 +49,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
             <span className="text-[0.6rem] sm:text-[0.65rem] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
               Academic OS
             </span>
+            <span
+              title={isSupabaseConnected ? 'Connected to Supabase Cloud DB — Real-Time Multi-Device Sync Active' : 'Running in Local Storage Mode — Add VITE_SUPABASE_URL to connect Supabase Cloud DB'}
+              className={`hidden sm:inline-flex items-center gap-1 text-[0.65rem] font-mono font-semibold px-2 py-0.5 rounded-full border ${
+                isSupabaseConnected
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+              }`}
+            >
+              <Database className="w-3 h-3" />
+              {isSupabaseConnected ? 'Supabase Synced' : 'Local DB'}
+            </span>
           </div>
           <p className="text-xs text-[var(--text-muted)] hidden sm:block">
             Smart Deadline & Study Productivity Manager
@@ -68,12 +81,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
             Ctrl+K
           </kbd>
         </button>
-
-        {/* Streak Counter Pill */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold font-mono shadow-xs">
-          <Flame className="w-4 h-4 text-amber-500 fill-amber-500 animate-bounce" />
-          <span>{analytics.currentStreak || 5}d Streak</span>
-        </div>
 
         {/* Notifications Bell */}
         <button

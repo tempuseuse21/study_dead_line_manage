@@ -18,6 +18,7 @@ import {
   requestBrowserNotificationPermission
 } from '../lib/webNotifications';
 import { storage, StorageKeys } from '../services/storageService';
+import { supabaseService } from '../services/supabaseService';
 import {
   ActivityLog,
   AppNotification,
@@ -71,6 +72,9 @@ const defaultFilters: TaskFilterOptions = {
 // ============================================================
 
 interface TaskContextType {
+  // Cloud Database Status
+  isSupabaseConnected: boolean;
+
   // Data
   tasks: Task[];
   subjects: Subject[];
@@ -203,6 +207,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => { storage.migrateLegacy(); }, []);
 
   // ---- State ----
+  const [isSupabaseConnected, setIsSupabaseConnected] = useState<boolean>(() => supabaseService.isAvailable());
   const [tasks, setTasks] = useState<Task[]>(() => storage.get(StorageKeys.TASKS, INITIAL_TASKS));
   const [subjects, setSubjects] = useState<Subject[]>(() => storage.get(StorageKeys.SUBJECTS, INITIAL_SUBJECTS));
   const [notifications, setNotifications] = useState<AppNotification[]>(() => storage.get(StorageKeys.NOTIFICATIONS, INITIAL_NOTIFICATIONS));
@@ -228,7 +233,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [ticker, setTicker] = useState(0);
   const [browserNotificationPermission, setBrowserNotificationPermission] = useState<NotificationPermission | 'unsupported'>(() => getBrowserNotificationPermission());
 
-  // ---- Persistence ----
+  // ---- Persistence & Supabase Sync ----
   useEffect(() => { storage.set(StorageKeys.TASKS, tasks); }, [tasks]);
   useEffect(() => { storage.set(StorageKeys.SUBJECTS, subjects); }, [subjects]);
   useEffect(() => { storage.set(StorageKeys.NOTIFICATIONS, notifications); }, [notifications]);
@@ -243,6 +248,76 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => { storage.set(StorageKeys.DAILY_PLANS, dailyPlans); }, [dailyPlans]);
   useEffect(() => { storage.set(StorageKeys.PREFERENCES, preferences); }, [preferences]);
   useEffect(() => { storage.set(StorageKeys.STUDY_PREFS, studyPreferences); }, [studyPreferences]);
+
+  // Initial Supabase fetch, seed & realtime channel subscription
+  useEffect(() => {
+    if (!supabaseService.isAvailable()) return;
+
+    let isMounted = true;
+
+    const syncCloudData = async () => {
+      try {
+        // Fetch Subjects
+        let cloudSubjects = await supabaseService.fetchSubjects();
+        if (cloudSubjects.length === 0) {
+          for (const s of INITIAL_SUBJECTS) {
+            await supabaseService.upsertSubject(s);
+          }
+          cloudSubjects = INITIAL_SUBJECTS;
+        }
+        if (isMounted) setSubjects(cloudSubjects);
+
+        // Fetch Tasks
+        let cloudTasks = await supabaseService.fetchTasks();
+        if (cloudTasks.length === 0) {
+          for (const t of INITIAL_TASKS) {
+            await supabaseService.upsertTask(t);
+          }
+          cloudTasks = INITIAL_TASKS;
+        }
+        if (isMounted) setTasks(cloudTasks);
+
+        // Fetch Exams
+        const cloudExams = await supabaseService.fetchExams();
+        if (cloudExams.length > 0 && isMounted) setExams(cloudExams);
+
+        // Fetch Goals
+        const cloudGoals = await supabaseService.fetchGoals();
+        if (cloudGoals.length > 0 && isMounted) setGoals(cloudGoals);
+
+        // Fetch Notes
+        const cloudNotes = await supabaseService.fetchNotes();
+        if (cloudNotes.length > 0 && isMounted) setNotes(cloudNotes);
+
+        // Fetch Resources
+        const cloudResources = await supabaseService.fetchResources();
+        if (cloudResources.length > 0 && isMounted) setResources(cloudResources);
+
+        if (isMounted) setIsSupabaseConnected(true);
+      } catch (err) {
+        console.error('Supabase initial fetch error:', err);
+      }
+    };
+
+    syncCloudData();
+
+    // Subscribe to realtime postgres updates across clients
+    const unsubTasks = supabaseService.subscribeToChanges('tasks', async () => {
+      const updated = await supabaseService.fetchTasks();
+      if (isMounted && updated.length > 0) setTasks(updated);
+    });
+
+    const unsubSubjects = supabaseService.subscribeToChanges('subjects', async () => {
+      const updated = await supabaseService.fetchSubjects();
+      if (isMounted && updated.length > 0) setSubjects(updated);
+    });
+
+    return () => {
+      isMounted = false;
+      unsubTasks();
+      unsubSubjects();
+    };
+  }, []);
 
   // Live ticker every 10s & Auto-shift overdue tasks to Completed section
   useEffect(() => {
@@ -551,6 +626,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTasks(prev => [newTask, ...prev]);
     logActivity('created task', newTask.title, 'task', newTask.id);
 
+    if (supabaseService.isAvailable()) {
+      supabaseService.upsertTask(newTask);
+    }
+
     const subjectObj = subjects.find(s => s.id === newTask.subjectId);
     const newNotif: AppNotification = {
       id: generateId('notif'),
@@ -598,6 +677,9 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map(t => {
         if (t.id === taskId) {
           updatedTask = { ...t, ...data, updatedAt: new Date().toISOString() };
+          if (supabaseService.isAvailable()) {
+            supabaseService.upsertTask(updatedTask);
+          }
           return updatedTask;
         }
         return t;
@@ -622,6 +704,9 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setTasks(prev => prev.filter(t => t.id !== taskId));
     if (selectedTask?.id === taskId) setSelectedTask(null);
+    if (supabaseService.isAvailable()) {
+      supabaseService.deleteTask(taskId);
+    }
     try { await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' }); } catch {}
     return { success: true };
   };
@@ -738,15 +823,32 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setSubjects(prev => [...prev, newSubject]);
     logActivity('added subject', newSubject.name, 'subject', newSubject.id);
+    if (supabaseService.isAvailable()) {
+      supabaseService.upsertSubject(newSubject);
+    }
     return newSubject;
   };
 
   const updateSubject = (id: string, data: Partial<Subject>): void => {
-    setSubjects(prev => prev.map(s => s.id === id ? { ...s, ...data, updatedAt: new Date().toISOString() } : s));
+    setSubjects(prev =>
+      prev.map(s => {
+        if (s.id === id) {
+          const updated = { ...s, ...data, updatedAt: new Date().toISOString() };
+          if (supabaseService.isAvailable()) {
+            supabaseService.upsertSubject(updated);
+          }
+          return updated;
+        }
+        return s;
+      })
+    );
   };
 
   const deleteSubject = (id: string): void => {
     setSubjects(prev => prev.filter(s => s.id !== id));
+    if (supabaseService.isAvailable()) {
+      supabaseService.deleteSubject(id);
+    }
   };
 
   // ============================================================
@@ -1207,7 +1309,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         exportData,
         importData,
         analytics,
-        ticker
+        ticker,
+        isSupabaseConnected
       }}
     >
       {children}

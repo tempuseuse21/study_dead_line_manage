@@ -139,7 +139,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             value: focusToday >= 60 ? `${Math.floor(focusToday / 60)}h ${focusToday % 60}m` : `${focusToday}m`,
             icon: Flame,
             color: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
-            sub: `${analytics.currentStreak || 5} day streak 🔥`
+            sub: 'Total focused time'
           }
         ].map(stat => {
           const IconComp = stat.icon;

@@ -249,9 +249,33 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => { storage.set(StorageKeys.PREFERENCES, preferences); }, [preferences]);
   useEffect(() => { storage.set(StorageKeys.STUDY_PREFS, studyPreferences); }, [studyPreferences]);
 
-  // Initial Supabase fetch, seed & realtime channel subscription
+  // Initial Supabase fetch, seed & realtime channel subscription (or central API fallback)
   useEffect(() => {
-    if (!supabaseService.isAvailable()) return;
+    if (!supabaseService.isAvailable()) {
+      let isMounted = true;
+      const fetchCentralData = async () => {
+        try {
+          const resTasks = await fetch('/api/tasks');
+          if (resTasks.ok) {
+            const apiTasks = await resTasks.json();
+            if (Array.isArray(apiTasks) && apiTasks.length > 0 && isMounted) {
+              setTasks(apiTasks);
+            }
+          }
+        } catch {}
+        try {
+          const resSubjects = await fetch('/api/subjects');
+          if (resSubjects.ok) {
+            const apiSubjects = await resSubjects.json();
+            if (Array.isArray(apiSubjects) && apiSubjects.length > 0 && isMounted) {
+              setSubjects(apiSubjects);
+            }
+          }
+        } catch {}
+      };
+      fetchCentralData();
+      return () => { isMounted = false; };
+    }
 
     let isMounted = true;
 

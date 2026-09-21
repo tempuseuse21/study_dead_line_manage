@@ -133,10 +133,10 @@ export const FocusModeView: React.FC = () => {
         </div>
 
         {/* Mode Selector */}
-        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] mb-8">
+        <div className="flex flex-wrap justify-center items-center gap-2 p-1.5 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] mb-6 sm:mb-8">
           <button
             onClick={() => handleModeChange('pomodoro')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               mode === 'pomodoro'
                 ? 'gradient-brand-bg text-white shadow-md'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
@@ -146,7 +146,7 @@ export const FocusModeView: React.FC = () => {
           </button>
           <button
             onClick={() => handleModeChange('short_break')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               mode === 'short_break'
                 ? 'bg-emerald-500 text-white shadow-md'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
@@ -156,7 +156,7 @@ export const FocusModeView: React.FC = () => {
           </button>
           <button
             onClick={() => handleModeChange('long_break')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               mode === 'long_break'
                 ? 'bg-cyan-600 text-white shadow-md'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
@@ -167,7 +167,7 @@ export const FocusModeView: React.FC = () => {
         </div>
 
         {/* SVG Circular Ring Timer */}
-        <div className="relative w-64 h-64 flex items-center justify-center my-4">
+        <div className="relative w-56 h-56 sm:w-64 sm:h-64 flex items-center justify-center my-4">
           <svg className="w-full h-full transform -rotate-90">
             <circle
               cx="128"

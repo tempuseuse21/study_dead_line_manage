@@ -149,84 +149,86 @@ export const CalendarView: React.FC = () => {
       {/* Main Grid: Calendar (Left 2 cols) & Day Agenda (Right 1 col) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar Grid */}
-        <div className="lg:col-span-2 rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink p-4 sm:p-5 shadow-none overflow-hidden">
-          {/* Weekday Labels */}
-          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-ink-muted uppercase tracking-wider mb-2">
-            <div>Sun</div>
-            <div>Mon</div>
-            <div>Tue</div>
-            <div>Wed</div>
-            <div>Thu</div>
-            <div>Fri</div>
-            <div>Sat</div>
-          </div>
+        <div className="lg:col-span-2 rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink p-3 sm:p-5 shadow-none overflow-x-auto">
+          <div className="min-w-[500px]">
+            {/* Weekday Labels */}
+            <div className="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-ink-muted uppercase tracking-wider mb-2">
+              <div>Sun</div>
+              <div>Mon</div>
+              <div>Tue</div>
+              <div>Wed</div>
+              <div>Thu</div>
+              <div>Fri</div>
+              <div>Sat</div>
+            </div>
 
-          {/* Days Grid */}
-          <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-            {calendarCells.map((cell, idx) => {
-              const isSelected = cell.dateStr === selectedDateStr;
-              return (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedDateStr(cell.dateStr)}
-                  className={`min-h-[75px] sm:min-h-[90px] rounded-none border-[1.5px] p-1.5 sm:p-2 flex flex-col justify-between transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/40 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20'
-                      : cell.isCurrentMonth
-                      ? 'border-ink-faint/70 dark:border-ink-faint bg-bg dark:bg-ink-850 hover:border-ink-faint dark:hover:border-ink-faint'
-                      : 'border-ink-faint dark:border-ink-850/60 bg-bg/40 dark:bg-ink/30 opacity-40'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                        cell.isToday
-                          ? 'bg-indigo-600 text-white'
-                          : isSelected
-                          ? 'text-indigo-600 dark:text-indigo-400 font-extrabold'
-                          : 'text-ink dark:text-bg'
-                      }`}
-                    >
-                      {cell.dayNum}
-                    </span>
-
-                    {cell.tasks.length > 0 && (
-                      <span className="text-[10px] font-bold text-ink-muted">
-                        {cell.tasks.length}
+            {/* Days Grid */}
+            <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+              {calendarCells.map((cell, idx) => {
+                const isSelected = cell.dateStr === selectedDateStr;
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => setSelectedDateStr(cell.dateStr)}
+                    className={`min-h-[75px] sm:min-h-[90px] rounded-none border-[1.5px] p-1.5 sm:p-2 flex flex-col justify-between transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/40 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20'
+                        : cell.isCurrentMonth
+                        ? 'border-ink-faint/70 dark:border-ink-faint bg-bg dark:bg-ink-850 hover:border-ink-faint dark:hover:border-ink-faint'
+                        : 'border-ink-faint dark:border-ink-850/60 bg-bg/40 dark:bg-ink/30 opacity-40'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                          cell.isToday
+                            ? 'bg-indigo-600 text-white'
+                            : isSelected
+                            ? 'text-indigo-600 dark:text-indigo-400 font-extrabold'
+                            : 'text-ink dark:text-bg'
+                        }`}
+                      >
+                        {cell.dayNum}
                       </span>
-                    )}
-                  </div>
 
-                  {/* Task Badges in Cell */}
-                  <div className="space-y-1 mt-1 overflow-hidden">
-                    {cell.tasks.slice(0, 2).map(task => {
-                      const subject = subjects.find(s => s.id === task.subjectId);
-                      return (
-                        <div
-                          key={task.id}
-                          onClick={e => {
-                            e.stopPropagation();
-                            setSelectedTask(task);
-                          }}
-                          className="truncate rounded px-1 py-0.5 text-[9px] font-semibold transition-opacity hover:opacity-80"
-                          style={{
-                            backgroundColor: `${subject?.color || '#6366f1'}20`,
-                            color: subject?.color || '#6366f1'
-                          }}
-                        >
-                          {task.title}
+                      {cell.tasks.length > 0 && (
+                        <span className="text-[10px] font-bold text-ink-muted">
+                          {cell.tasks.length}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Task Badges in Cell */}
+                    <div className="space-y-1 mt-1 overflow-hidden">
+                      {cell.tasks.slice(0, 2).map(task => {
+                        const subject = subjects.find(s => s.id === task.subjectId);
+                        return (
+                          <div
+                            key={task.id}
+                            onClick={e => {
+                              e.stopPropagation();
+                              setSelectedTask(task);
+                            }}
+                            className="truncate rounded px-1 py-0.5 text-[9px] font-semibold transition-opacity hover:opacity-80"
+                            style={{
+                              backgroundColor: `${subject?.color || '#6366f1'}20`,
+                              color: subject?.color || '#6366f1'
+                            }}
+                          >
+                            {task.title}
+                          </div>
+                        );
+                      })}
+                      {cell.tasks.length > 2 && (
+                        <div className="text-[9px] text-ink-muted font-medium pl-0.5">
+                          +{cell.tasks.length - 2} more
                         </div>
-                      );
-                    })}
-                    {cell.tasks.length > 2 && (
-                      <div className="text-[9px] text-ink-muted font-medium pl-0.5">
-                        +{cell.tasks.length - 2} more
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
 

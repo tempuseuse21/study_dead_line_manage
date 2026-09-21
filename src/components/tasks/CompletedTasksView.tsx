@@ -81,17 +81,13 @@ export const CompletedTasksView: React.FC = () => {
           {filteredCompletedTasks.map(task => (
             <div key={task.id} className="relative group">
               <TaskCard task={task} />
-              <button
-                onClick={e => {
-                  e.stopPropagation();
-                  toggleTaskComplete(task.id);
-                }}
-                className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-slate-900/80 hover:bg-indigo-600 text-white text-[10px] font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-md"
-                title="Restore to Active Tasks"
+              <div
+                className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold font-mono flex items-center gap-1 backdrop-blur-xs pointer-events-none"
+                title="Completed and Archived"
               >
-                <RotateCcw className="w-3 h-3" />
-                <span>Re-open</span>
-              </button>
+                <Check className="w-3 h-3" />
+                <span>Archived</span>
+              </div>
             </div>
           ))}
         </div>

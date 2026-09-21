@@ -52,6 +52,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ onNavigate
   const [annAuthor, setAnnAuthor] = useState(() => localStorage.getItem('cr_poster_name') || '');
   const [annPriority, setAnnPriority] = useState<'normal' | 'urgent'>('normal');
   const [annIsPinned, setAnnIsPinned] = useState(false);
+  const [annPasscode, setAnnPasscode] = useState('');
   const [annAuthorError, setAnnAuthorError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [postSuccess, setPostSuccess] = useState(false);
@@ -80,22 +81,32 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ onNavigate
       setAnnAuthorError('Your full name is required to post announcements and prevent false notices.');
       return;
     }
+    if (!annPasscode.trim()) {
+      setAnnAuthorError('CR authorization passcode is required to post announcements.');
+      return;
+    }
     if (!annTitle.trim() || !annContent.trim()) return;
 
     setIsSubmitting(true);
     try {
       localStorage.setItem('cr_poster_name', annAuthor.trim());
-      await createAnnouncement({
+      const res = await createAnnouncement({
         title: (annTitle || '').trim(),
         content: (annContent || '').trim(),
         subjectId: annSubjectId === 'all' ? undefined : annSubjectId,
         authorName: (annAuthor || '').trim(),
         priority: annPriority,
         isPinned: annIsPinned
-      }, 'iamcr');
+      }, annPasscode);
+
+      if (!res.success) {
+        setAnnAuthorError(res.error || 'Incorrect CR passcode. Posting denied.');
+        return;
+      }
 
       setAnnTitle('');
       setAnnContent('');
+      setAnnPasscode('');
       setAnnSubjectId('all');
       setAnnPriority('normal');
       setAnnIsPinned(false);
@@ -335,6 +346,23 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ onNavigate
                 />
               </div>
 
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-ink-muted dark:text-ink-muted">
+                  CR Authorization Passcode <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Enter CR authorization passcode..."
+                  value={annPasscode}
+                  onChange={e => {
+                    setAnnPasscode(e.target.value);
+                    if (annAuthorError) setAnnAuthorError('');
+                  }}
+                  className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-3.5 py-2.5 text-xs text-ink dark:text-white focus:border-amber-500 focus:outline-none"
+                />
+              </div>
+
               <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t-[1.5px] border-amber-200/60 dark:border-amber-800/60">
                 <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
                   <label className="flex items-center gap-2 cursor-pointer text-ink-muted dark:text-ink-muted">
@@ -370,7 +398,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ onNavigate
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting || !annAuthor.trim() || !annTitle.trim() || !annContent.trim()}
+                    disabled={isSubmitting || !annAuthor.trim() || !annTitle.trim() || !annContent.trim() || !annPasscode.trim()}
                     className="px-5 py-2 rounded-none text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-none disabled:opacity-50 transition-colors"
                   >
                     {isSubmitting ? 'Publishing...' : 'Publish Verified Announcement'}

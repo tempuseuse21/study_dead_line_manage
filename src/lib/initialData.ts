@@ -262,3 +262,127 @@ export const INITIAL_STUDY_PREFERENCES: StudyPreferences = {
   longBreakDurationMinutes: 15,
   sessionsBeforeLongBreak: 4
 };
+
+// ============================================================
+// Initial Timetable Slots
+// ============================================================
+
+export const INITIAL_TIMETABLE_SLOTS = [
+  {
+    id: 'tt_1',
+    day: 'Monday' as const,
+    startTime: '09:00',
+    endTime: '10:00',
+    subjectId: 'sub_it615',
+    subjectCode: 'IT615',
+    subjectName: 'Database Management System',
+    room: 'LH-101',
+    professor: 'Prof. Ramesh Kulkarni',
+    type: 'lecture' as const,
+    color: '#3b82f6'
+  },
+  {
+    id: 'tt_2',
+    day: 'Monday' as const,
+    startTime: '10:15',
+    endTime: '11:15',
+    subjectId: 'sub_sc612',
+    subjectCode: 'SC612',
+    subjectName: 'Discrete Mathematics',
+    room: 'LH-102',
+    professor: 'Dr. Sunita Deshmukh',
+    type: 'lecture' as const,
+    color: '#8b5cf6'
+  },
+  {
+    id: 'tt_3',
+    day: 'Monday' as const,
+    startTime: '14:00',
+    endTime: '16:00',
+    subjectId: 'sub_it615',
+    subjectCode: 'IT615',
+    subjectName: 'DBMS Lab Session',
+    room: 'Computer Lab 3',
+    professor: 'Prof. Ramesh Kulkarni',
+    type: 'lab' as const,
+    color: '#3b82f6'
+  },
+  {
+    id: 'tt_4',
+    day: 'Tuesday' as const,
+    startTime: '09:00',
+    endTime: '10:00',
+    subjectId: 'sub_it603',
+    subjectCode: 'IT603',
+    subjectName: 'Introduction to Programming',
+    room: 'LH-103',
+    professor: 'Prof. Amit Shah',
+    type: 'lecture' as const,
+    color: '#10b981'
+  },
+  {
+    id: 'tt_5',
+    day: 'Tuesday' as const,
+    startTime: '10:15',
+    endTime: '11:15',
+    subjectId: 'sub_it639',
+    subjectCode: 'IT639',
+    subjectName: 'Data Structures & Algorithms',
+    room: 'LH-101',
+    professor: 'Prof. Hitesh Bhatt',
+    type: 'lecture' as const,
+    color: '#ec4899'
+  },
+  {
+    id: 'tt_6',
+    day: 'Wednesday' as const,
+    startTime: '09:00',
+    endTime: '10:00',
+    subjectId: 'sub_pc613',
+    subjectCode: 'PC613',
+    subjectName: 'Communication Skills',
+    room: 'Seminar Hall B',
+    professor: 'Dr. Ananya Roy',
+    type: 'lecture' as const,
+    color: '#f59e0b'
+  },
+  {
+    id: 'tt_7',
+    day: 'Wednesday' as const,
+    startTime: '14:00',
+    endTime: '16:00',
+    subjectId: 'sub_it639',
+    subjectCode: 'IT639',
+    subjectName: 'DSA Practical Lab',
+    room: 'Advanced Software Lab 1',
+    professor: 'Prof. Hitesh Bhatt',
+    type: 'lab' as const,
+    color: '#ec4899'
+  },
+  {
+    id: 'tt_8',
+    day: 'Thursday' as const,
+    startTime: '09:00',
+    endTime: '10:00',
+    subjectId: 'sub_sc612',
+    subjectCode: 'SC612',
+    subjectName: 'Discrete Mathematics Tutorial',
+    room: 'LH-102',
+    professor: 'Dr. Sunita Deshmukh',
+    type: 'tutorial' as const,
+    color: '#8b5cf6'
+  },
+  {
+    id: 'tt_9',
+    day: 'Friday' as const,
+    startTime: '09:00',
+    endTime: '11:00',
+    subjectId: 'sub_it603',
+    subjectCode: 'IT603',
+    subjectName: 'C++/Python Programming Lab',
+    room: 'Lab 2',
+    professor: 'Prof. Amit Shah',
+    type: 'lab' as const,
+    color: '#10b981'
+  }
+];

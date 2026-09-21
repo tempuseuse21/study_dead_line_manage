@@ -7,6 +7,7 @@ import {
   INITIAL_TASKS,
   INITIAL_ANNOUNCEMENTS,
   INITIAL_STUDY_PREFERENCES,
+  INITIAL_TIMETABLE_SLOTS,
   getInitialExams,
   getInitialGoals
 } from '../lib/initialData';
@@ -37,6 +38,7 @@ import {
   StudyPreferences,
   Task,
   TaskStatus,
+  TimetableSlot,
   UserAnalytics,
   WeeklyActivityEntry
 } from '../types';
@@ -88,6 +90,7 @@ interface TaskContextType {
   resources: Resource[];
   revisionTopics: RevisionTopic[];
   dailyPlans: DailyPlan[];
+  timetableSlots: TimetableSlot[];
   preferences: NotificationPreferences;
   studyPreferences: StudyPreferences;
 
@@ -122,6 +125,11 @@ interface TaskContextType {
   addSubject: (data: Partial<Subject>) => Subject;
   updateSubject: (id: string, data: Partial<Subject>) => void;
   deleteSubject: (id: string) => void;
+
+  // Timetable actions
+  addTimetableSlot: (data: Partial<TimetableSlot>) => TimetableSlot;
+  updateTimetableSlot: (id: string, data: Partial<TimetableSlot>) => void;
+  deleteTimetableSlot: (id: string) => void;
 
   // Exam actions
   createExam: (data: Partial<Exam>) => Exam;
@@ -220,6 +228,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [resources, setResources] = useState<Resource[]>(() => storage.get(StorageKeys.RESOURCES, []));
   const [revisionTopics, setRevisionTopics] = useState<RevisionTopic[]>(() => storage.get(StorageKeys.REVISION_TOPICS, []));
   const [dailyPlans, setDailyPlans] = useState<DailyPlan[]>(() => storage.get(StorageKeys.DAILY_PLANS, []));
+  const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>(() => storage.get(StorageKeys.TIMETABLE, INITIAL_TIMETABLE_SLOTS));
   const [preferences, setPreferences] = useState<NotificationPreferences>(() => storage.get(StorageKeys.PREFERENCES, INITIAL_NOTIFICATION_PREFERENCES));
   const [studyPreferences, setStudyPreferences] = useState<StudyPreferences>(() => storage.get(StorageKeys.STUDY_PREFS, INITIAL_STUDY_PREFERENCES));
 
@@ -246,6 +255,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => { storage.set(StorageKeys.RESOURCES, resources); }, [resources]);
   useEffect(() => { storage.set(StorageKeys.REVISION_TOPICS, revisionTopics); }, [revisionTopics]);
   useEffect(() => { storage.set(StorageKeys.DAILY_PLANS, dailyPlans); }, [dailyPlans]);
+  useEffect(() => { storage.set(StorageKeys.TIMETABLE, timetableSlots); }, [timetableSlots]);
   useEffect(() => { storage.set(StorageKeys.PREFERENCES, preferences); }, [preferences]);
   useEffect(() => { storage.set(StorageKeys.STUDY_PREFS, studyPreferences); }, [studyPreferences]);
 
@@ -700,7 +710,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTasks(prev =>
       prev.map(t => {
         if (t.id === taskId) {
-          updatedTask = { ...t, ...data, updatedAt: new Date().toISOString() };
+          const finalData = { ...data };
+          // Completed tasks cannot be reopened or downgraded in status/progress
+          if (t.status === 'completed') {
+            finalData.status = 'completed';
+            finalData.progress = 100;
+          }
+          updatedTask = { ...t, ...finalData, updatedAt: new Date().toISOString() };
           if (supabaseService.isAvailable()) {
             supabaseService.upsertTask(updatedTask);
           }
@@ -710,7 +726,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     );
     if (selectedTask?.id === taskId) {
-      setSelectedTask(prev => (prev ? { ...prev, ...data, updatedAt: new Date().toISOString() } : null));
+      setSelectedTask(prev => (prev ? { ...prev, ...data, status: prev.status === 'completed' ? 'completed' : (data.status || prev.status), progress: prev.status === 'completed' ? 100 : (data.progress ?? prev.progress), updatedAt: new Date().toISOString() } : null));
     }
     try {
       await fetch(`/api/tasks/${taskId}`, {
@@ -723,7 +739,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deleteTask = async (taskId: string, passcode?: string): Promise<{ success: boolean; error?: string }> => {
-    if (passcode !== '2026') {
+    if ((passcode || '').trim() !== 'iamcr') {
       return { success: false, error: 'Incorrect authorization passcode. Deletion denied.' };
     }
     setTasks(prev => prev.filter(t => t.id !== taskId));
@@ -738,36 +754,26 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const toggleTaskComplete = async (taskId: string): Promise<void> => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
-    const isNowCompleted = task.status !== 'completed';
-    const newStatus: TaskStatus = isNowCompleted ? 'completed' : 'in_progress';
-    const todayStr = getTodayStr();
 
-    const [h, m] = (task.dueTime || '23:59').split(':').map(Number);
-    const [y, mon, d] = task.dueDate.split('-').map(Number);
-    const taskTime = new Date(y, mon - 1, d, h || 23, m || 59).getTime();
-    const isOverdue = taskTime < Date.now();
+    // Completed tasks cannot be reopened once moved into completed archive
+    if (task.status === 'completed') return;
 
     const updatedSubtasks = task.subtasks.map(st => ({
       ...st,
-      completed: isNowCompleted,
-      completedAt: isNowCompleted ? new Date().toISOString() : undefined
+      completed: true,
+      completedAt: new Date().toISOString()
     }));
 
     await updateTask(taskId, {
-      status: newStatus,
-      progress: isNowCompleted ? 100 : 0,
-      completedAt: isNowCompleted ? new Date().toISOString() : undefined,
-      dueDate: (!isNowCompleted && isOverdue) ? todayStr : task.dueDate,
+      status: 'completed',
+      progress: 100,
+      completedAt: new Date().toISOString(),
       subtasks: updatedSubtasks
     });
 
-    if (isNowCompleted) {
-      triggerCompletionConfetti();
-      playNotificationChime();
-      logActivity('completed task', task.title, 'task', task.id);
-    } else {
-      logActivity('re-opened task', task.title, 'task', task.id);
-    }
+    triggerCompletionConfetti();
+    playNotificationChime();
+    logActivity('completed task', task.title, 'task', task.id);
   };
 
   const toggleSubtask = async (taskId: string, subtaskId: string): Promise<void> => {
@@ -782,11 +788,11 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     const total = updatedSubtasks.length;
     const completedSub = updatedSubtasks.filter(s => s.completed).length;
-    const progress = total > 0 ? Math.round((completedSub / total) * 100) : task.progress;
+    const progress = task.status === 'completed' ? 100 : (total > 0 ? Math.round((completedSub / total) * 100) : task.progress);
     const status: TaskStatus =
-      total > 0 && completedSub === total ? 'completed'
+      task.status === 'completed' ? 'completed'
+      : total > 0 && completedSub === total ? 'completed'
       : completedSub > 0 ? 'in_progress'
-      : task.status === 'completed' ? 'in_progress'
       : task.status;
     await updateTask(taskId, { subtasks: updatedSubtasks, progress, status });
   };
@@ -873,6 +879,38 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (supabaseService.isAvailable()) {
       supabaseService.deleteSubject(id);
     }
+  };
+
+  // ============================================================
+  // Timetable Actions
+  // ============================================================
+
+  const addTimetableSlot = (data: Partial<TimetableSlot>): TimetableSlot => {
+    const newSlot: TimetableSlot = {
+      id: generateId('tt'),
+      day: data.day || 'Monday',
+      startTime: data.startTime || '09:00',
+      endTime: data.endTime || '10:00',
+      subjectId: data.subjectId,
+      subjectCode: data.subjectCode,
+      subjectName: data.subjectName || 'Lecture / Class',
+      room: data.room || '',
+      professor: data.professor || '',
+      type: data.type || 'lecture',
+      color: data.color || '#3b82f6',
+      notes: data.notes || ''
+    };
+    setTimetableSlots(prev => [...prev, newSlot]);
+    logActivity('added timetable class slot', newSlot.subjectName, 'task', newSlot.id);
+    return newSlot;
+  };
+
+  const updateTimetableSlot = (id: string, data: Partial<TimetableSlot>): void => {
+    setTimetableSlots(prev => prev.map(s => s.id === id ? { ...s, ...data } : s));
+  };
+
+  const deleteTimetableSlot = (id: string): void => {
+    setTimetableSlots(prev => prev.filter(s => s.id !== id));
   };
 
   // ============================================================
@@ -1115,7 +1153,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     passcode: string
   ): Promise<{ success: boolean; data?: ClassAnnouncement; error?: string }> => {
     if ((passcode || '').trim() !== 'iamcr') {
-      return { success: false, error: 'Incorrect authorization passcode. Announcement denied.' };
+      return { success: false, error: 'Incorrect CR authorization passcode. Announcement posting denied.' };
     }
     const newAnn: ClassAnnouncement = {
       id: generateId('ann'),
@@ -1160,7 +1198,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deleteAnnouncement = async (annId: string, passcode?: string): Promise<{ success: boolean; error?: string } | void> => {
-    if (passcode !== undefined && (passcode || '').trim() !== '2026') {
+    if (passcode !== undefined && (passcode || '').trim() !== 'iamcr') {
       return { success: false, error: 'Incorrect authorization passcode. Deletion denied.' };
     }
     setAnnouncements(prev => prev.filter(a => a.id !== annId));
@@ -1267,6 +1305,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resources,
         revisionTopics,
         dailyPlans,
+        timetableSlots,
         preferences,
         studyPreferences,
         filters,
@@ -1293,6 +1332,9 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addSubject,
         updateSubject,
         deleteSubject,
+        addTimetableSlot,
+        updateTimetableSlot,
+        deleteTimetableSlot,
         createExam,
         updateExam,
         deleteExam,

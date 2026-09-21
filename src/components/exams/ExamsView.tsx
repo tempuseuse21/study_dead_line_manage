@@ -95,7 +95,7 @@ const ExamFormModal: React.FC<ExamFormProps> = ({ exam, onClose }) => {
             {errors.title && <p className="text-xs text-rose-500 mt-1">{errors.title}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 font-mono">Subject</label>
               <select
@@ -122,7 +122,7 @@ const ExamFormModal: React.FC<ExamFormProps> = ({ exam, onClose }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 font-mono">Exam Date *</label>
               <input
@@ -146,7 +146,7 @@ const ExamFormModal: React.FC<ExamFormProps> = ({ exam, onClose }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 font-mono">Preparation %</label>
               <input

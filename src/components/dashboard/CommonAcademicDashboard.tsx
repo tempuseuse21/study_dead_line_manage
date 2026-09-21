@@ -364,8 +364,13 @@ export const CommonAcademicDashboard: React.FC<CommonAcademicDashboardProps> = (
                   Details
                 </button>
                 <button
+                  disabled={nextDeadlineTask.status === 'completed'}
                   onClick={() => toggleTaskComplete(nextDeadlineTask.id)}
-                  className="flex-1 py-2 px-3 rounded-none bg-ink dark:bg-ink-faint text-bg dark:text-ink hover:bg-ink dark:hover:bg-ink-faint text-xs font-bold text-white shadow-none shadow-blue-500/20 active:scale-95 transition-all text-center"
+                  className={`flex-1 py-2 px-3 rounded-none text-xs font-bold text-center transition-all ${
+                    nextDeadlineTask.status === 'completed'
+                      ? 'bg-emerald-600 text-white cursor-default opacity-90'
+                      : 'bg-ink dark:bg-ink-faint text-bg dark:text-ink hover:bg-ink dark:hover:bg-ink-faint text-white shadow-none shadow-blue-500/20 active:scale-95 cursor-pointer'
+                  }`}
                 >
                   {nextDeadlineTask.status === 'completed' ? 'Done ✓' : 'Mark Done'}
                 </button>

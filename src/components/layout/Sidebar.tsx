@@ -7,8 +7,8 @@ import {
   CheckCircle2,
   Calendar,
   Bell,
+  Clock,
   Zap,
-  Settings,
   Sparkles
 } from 'lucide-react';
 
@@ -48,14 +48,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
     {
       title: 'Academic & Focus',
       items: [
+        { id: 'timetable', label: 'Time Table', icon: Clock },
         { id: 'announcements', label: 'Notice Board', icon: Bell, badge: unreadAnnouncementsCount || undefined },
         { id: 'focus', label: 'Focus Mode', icon: Zap }
-      ]
-    },
-    {
-      title: 'System',
-      items: [
-        { id: 'settings', label: 'Settings', icon: Settings }
       ]
     }
   ];

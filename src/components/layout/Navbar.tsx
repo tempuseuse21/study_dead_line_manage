@@ -4,7 +4,6 @@ import { useTasks } from '../../context/TaskContext';
 import {
   Sparkles,
   Plus,
-  Search,
   Sun,
   Moon,
   Flame,
@@ -22,7 +21,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
   const { theme, toggleTheme } = useTheme();
   const {
     setIsCreateTaskModalOpen,
-    setIsSearchModalOpen,
     notifications,
     analytics,
     setIsNotificationDrawerOpen,
@@ -69,18 +67,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
 
       {/* Global Actions & Controls */}
       <div className="flex items-center gap-1.5 sm:gap-4">
-        {/* Quick Search Bar Trigger */}
-        <button
-          onClick={() => setIsSearchModalOpen(true)}
-          className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-indigo-500/30 text-xs font-medium transition-all flex items-center gap-2 cursor-pointer"
-          title="Search Tasks & Notices"
-        >
-          <Search className="w-4 h-4 text-[var(--text-faint)]" />
-          <span className="hidden md:inline">Search tasks, notices...</span>
-          <kbd className="hidden lg:inline-block px-1.5 py-0.5 text-[0.65rem] font-mono rounded bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-faint)]">
-            Ctrl+K
-          </kbd>
-        </button>
 
         {/* Notifications Bell */}
         <button

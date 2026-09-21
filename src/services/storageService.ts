@@ -21,6 +21,7 @@ export const StorageKeys = {
   RESOURCES: `${NAMESPACE}resources`,
   REVISION_TOPICS: `${NAMESPACE}revision_topics`,
   DAILY_PLANS: `${NAMESPACE}daily_plans`,
+  TIMETABLE: `${NAMESPACE}timetable`,
   THEME: `${NAMESPACE}theme`,
   INITIALIZED: `${NAMESPACE}initialized`,
   // Legacy keys to remove on first run

@@ -4,10 +4,10 @@ import {
   CheckSquare,
   CheckCircle2,
   Calendar,
+  Clock,
   Zap,
   Plus,
   Bell,
-  Settings,
   X,
   Menu
 } from 'lucide-react';
@@ -36,9 +36,9 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeView, onNavigate }) 
   ];
 
   const moreMenuItems = [
+    { id: 'timetable', label: 'Class Timetable', icon: Clock },
     { id: 'calendar', label: 'Calendar Planner', icon: Calendar },
-    { id: 'focus', label: 'Focus Pomodoro Mode', icon: Zap },
-    { id: 'settings', label: 'System Settings', icon: Settings }
+    { id: 'focus', label: 'Focus Pomodoro Mode', icon: Zap }
   ];
 
   const handleNavClick = (viewId: string) => {

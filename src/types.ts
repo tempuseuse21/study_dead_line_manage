@@ -503,3 +503,24 @@ export interface AuthState {
   isAuthenticated: boolean;
   token?: string;
 }
+
+// ============================================================
+// Timetable
+// ============================================================
+
+export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+
+export interface TimetableSlot {
+  id: string;
+  day: DayOfWeek;
+  startTime: string; // e.g. "09:00"
+  endTime: string;   // e.g. "10:00"
+  subjectId?: string;
+  subjectCode?: string;
+  subjectName: string;
+  room?: string;      // e.g. "Lab 3" or "LH-201"
+  professor?: string; // e.g. "Prof. Ramesh Kulkarni"
+  type: 'lecture' | 'lab' | 'tutorial' | 'seminar' | 'other';
+  color?: string;
+  notes?: string;
+}

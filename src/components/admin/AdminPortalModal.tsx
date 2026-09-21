@@ -155,7 +155,7 @@ export const AdminPortalModal: React.FC = () => {
                     required
                     value={pinInput}
                     onChange={e => setPinInput(e.target.value)}
-                    placeholder="Enter PIN (Default: admin2026)"
+                    placeholder="Enter authorization passcode..."
                     className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-4 py-3 text-sm font-semibold text-ink dark:text-white placeholder-ink-400 focus:border-blue-500 focus:outline-hidden shadow-inner"
                   />
                 </div>
@@ -171,26 +171,12 @@ export const AdminPortalModal: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-none bg-ink dark:bg-ink-faint text-bg dark:text-ink hover:bg-ink dark:hover:bg-ink-faint py-3 text-xs font-bold text-white shadow-none shadow-blue-500/25 active:scale-95 transition-all"
+                  className="w-full flex items-center justify-center gap-2 rounded-none bg-ink dark:bg-ink-faint text-bg dark:text-ink hover:bg-ink dark:hover:bg-ink-faint py-3 text-xs font-bold text-white shadow-none shadow-blue-500/25 active:scale-95 transition-all"
                 >
                   <Unlock className="h-4 w-4" />
                   <span>{isLoading ? 'Verifying...' : 'Unlock Admin Portal'}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPinInput('admin2026');
-                    loginAdmin('admin2026');
-                  }}
-                  className="px-4 py-3 rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-ink-faint dark:bg-ink hover:bg-ink-faint dark:hover:bg-ink-700 text-xs font-bold text-ink-muted dark:text-ink-muted transition-colors"
-                >
-                  Use Demo PIN
-                </button>
               </div>
-
-              <p className="text-center text-[11px] text-ink-muted">
-                Default class passcode: <code className="font-mono font-bold text-ink dark:text-bg dark:text-blue-400 bg-ink-faint dark:bg-ink dark:bg-blue-950 px-1.5 py-0.5 rounded">admin2026</code>
-              </p>
             </form>
           </div>
         ) : (

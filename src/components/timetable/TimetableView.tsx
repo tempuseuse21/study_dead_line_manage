@@ -202,9 +202,16 @@ const TimetableFormModal: React.FC<TimetableFormModalProps> = ({ slot, onClose }
           </div>
 
           <div>
-            <label className="block font-mono font-bold text-xs uppercase text-[var(--text-muted)] mb-1">
-              Professor / Instructor
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-mono font-bold text-xs uppercase text-[var(--text-muted)]">
+                Professor / Instructor
+              </label>
+              {selectedSubjectId && (
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  ✨ Auto-assigned from Subject
+                </span>
+              )}
+            </div>
             <input
               type="text"
               value={professor}
@@ -299,14 +306,18 @@ export const TimetableView: React.FC<{ onNavigate?: (view: string) => void }> = 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <Clock className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
             <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-main)]">
               Class Timetable & Weekly Schedule
             </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Shared Master Timetable</span>
+            </span>
           </div>
           <p className="text-xs sm:text-sm text-[var(--text-muted)]">
-            Shared master timetable for lectures, lab sessions, and tutorials.
+            Shared master timetable for lectures, lab sessions, and tutorials — synced in real-time for all users.
           </p>
         </div>
 
@@ -389,6 +400,7 @@ export const TimetableView: React.FC<{ onNavigate?: (view: string) => void }> = 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {daySlots.map(slot => {
                     const badge = getTypeBadge(slot.type);
+                    const profName = slot.professor || subjects.find(s => s.id === slot.subjectId || s.name.toLowerCase() === slot.subjectName.toLowerCase())?.professor || subjects.find(s => s.id === slot.subjectId || s.name.toLowerCase() === slot.subjectName.toLowerCase())?.teacherName;
                     return (
                       <div
                         key={slot.id}
@@ -429,10 +441,10 @@ export const TimetableView: React.FC<{ onNavigate?: (view: string) => void }> = 
                               </div>
                             )}
 
-                            {slot.professor && (
-                              <div className="flex items-center gap-1.5">
+                            {profName && (
+                              <div className="flex items-center gap-1.5 font-medium text-[var(--text-main)]">
                                 <User className="w-3.5 h-3.5 text-[var(--text-faint)]" />
-                                <span>{slot.professor}</span>
+                                <span>{profName}</span>
                               </div>
                             )}
                           </div>
@@ -481,6 +493,7 @@ export const TimetableView: React.FC<{ onNavigate?: (view: string) => void }> = 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayedSlots.map(slot => {
                 const badge = getTypeBadge(slot.type);
+                const profName = slot.professor || subjects.find(s => s.id === slot.subjectId || s.name.toLowerCase() === slot.subjectName.toLowerCase())?.professor || subjects.find(s => s.id === slot.subjectId || s.name.toLowerCase() === slot.subjectName.toLowerCase())?.teacherName;
                 return (
                   <div
                     key={slot.id}
@@ -521,10 +534,10 @@ export const TimetableView: React.FC<{ onNavigate?: (view: string) => void }> = 
                           </div>
                         )}
 
-                        {slot.professor && (
-                          <div className="flex items-center gap-1.5">
+                        {profName && (
+                          <div className="flex items-center gap-1.5 font-medium text-[var(--text-main)]">
                             <User className="w-3.5 h-3.5 text-[var(--text-faint)]" />
-                            <span>{slot.professor}</span>
+                            <span>{profName}</span>
                           </div>
                         )}
                       </div>

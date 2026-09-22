@@ -9,6 +9,32 @@ export function cn(...classes: (string | boolean | undefined | null)[]): string 
   return classes.filter(Boolean).join(' ');
 }
 
+/**
+ * Normalizes course code/subject name/id to official assigned faculty
+ */
+export function getNormalizedProf(code?: string, name?: string, id?: string): string {
+  const c = (code || '').toUpperCase();
+  const n = (name || '').toLowerCase();
+  const i = (id || '').toLowerCase();
+
+  if (c.includes('IT615') || n.includes('dbms') || n.includes('database') || i.includes('it615')) {
+    return 'Prof. Minal Bhise';
+  }
+  if (c.includes('IT603') || n.includes('intro') || n.includes('programming') || i.includes('it603')) {
+    return 'Prof. Sandeep Modha';
+  }
+  if (c.includes('IT639') || n.includes('data structur') || n.includes('dsa') || i.includes('it639')) {
+    return 'Prof. Supantha Pandit';
+  }
+  if (c.includes('PC613') || n.includes('communication') || i.includes('pc613')) {
+    return 'Prof. Nandini Banerjee';
+  }
+  if (c.includes('SC612') || n.includes('discrete') || i.includes('sc612')) {
+    return 'Prof. Gopinath Panda';
+  }
+  return '';
+}
+
 // ============================================================
 // Date / Time Utilities
 // ============================================================

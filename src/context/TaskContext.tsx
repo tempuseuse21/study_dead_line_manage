@@ -11,10 +11,11 @@ import {
   getInitialExams,
   getInitialGoals
 } from '../lib/initialData';
-import { playNotificationChime, triggerCompletionConfetti, formatDateDisplay, generateId, getTodayStr, getWeekDates } from '../lib/utils';
+import { playNotificationChime, triggerCompletionConfetti, formatDateDisplay, generateId, getTodayStr, getWeekDates, getNormalizedProf } from '../lib/utils';
 import {
   triggerWebsiteNotification,
   subscribeToBroadcastEvents,
+  broadcastPostEvent,
   getBrowserNotificationPermission,
   requestBrowserNotificationPermission
 } from '../lib/webNotifications';
@@ -211,13 +212,44 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
-  // Run migration on first mount
-  useEffect(() => { storage.migrateLegacy(); }, []);
+  // Run migration on first mount & update professor names to user specified values
+  useEffect(() => {
+    storage.migrateLegacy();
+    setSubjects(prev =>
+      prev.map(s => {
+        const targetProf = getNormalizedProf(s.code, s.name, s.id);
+        if (targetProf) {
+          const updated = { ...s, teacherName: targetProf, professor: targetProf };
+          if (supabaseService.isAvailable()) supabaseService.upsertSubject(updated);
+          return updated;
+        }
+        return s;
+      })
+    );
+
+    setTimetableSlots(prev =>
+      prev.map(slot => {
+        const targetProf = getNormalizedProf(slot.subjectCode, slot.subjectName, slot.subjectId);
+        if (targetProf) {
+          const updated = { ...slot, professor: targetProf };
+          if (supabaseService.isAvailable()) supabaseService.upsertTimetableSlot(updated);
+          return updated;
+        }
+        return slot;
+      })
+    );
+  }, []);
 
   // ---- State ----
   const [isSupabaseConnected, setIsSupabaseConnected] = useState<boolean>(() => supabaseService.isAvailable());
   const [tasks, setTasks] = useState<Task[]>(() => storage.get(StorageKeys.TASKS, INITIAL_TASKS));
-  const [subjects, setSubjects] = useState<Subject[]>(() => storage.get(StorageKeys.SUBJECTS, INITIAL_SUBJECTS));
+  const [subjects, setSubjects] = useState<Subject[]>(() => {
+    const raw = storage.get(StorageKeys.SUBJECTS, INITIAL_SUBJECTS);
+    return raw.map(s => {
+      const p = getNormalizedProf(s.code, s.name, s.id) || s.professor || s.teacherName || '';
+      return { ...s, teacherName: p, professor: p };
+    });
+  });
   const [notifications, setNotifications] = useState<AppNotification[]>(() => storage.get(StorageKeys.NOTIFICATIONS, INITIAL_NOTIFICATIONS));
   const [activities, setActivities] = useState<ActivityLog[]>(() => storage.get(StorageKeys.ACTIVITIES, INITIAL_ACTIVITY));
   const [focusSessions, setFocusSessions] = useState<FocusSession[]>(() => storage.get(StorageKeys.FOCUS_SESSIONS, []));
@@ -228,7 +260,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [resources, setResources] = useState<Resource[]>(() => storage.get(StorageKeys.RESOURCES, []));
   const [revisionTopics, setRevisionTopics] = useState<RevisionTopic[]>(() => storage.get(StorageKeys.REVISION_TOPICS, []));
   const [dailyPlans, setDailyPlans] = useState<DailyPlan[]>(() => storage.get(StorageKeys.DAILY_PLANS, []));
-  const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>(() => storage.get(StorageKeys.TIMETABLE, INITIAL_TIMETABLE_SLOTS));
+  const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>(() => {
+    const raw = storage.get(StorageKeys.TIMETABLE, INITIAL_TIMETABLE_SLOTS);
+    return raw.map(slot => {
+      const p = getNormalizedProf(slot.subjectCode, slot.subjectName, slot.subjectId) || slot.professor || '';
+      return { ...slot, professor: p };
+    });
+  });
   const [preferences, setPreferences] = useState<NotificationPreferences>(() => storage.get(StorageKeys.PREFERENCES, INITIAL_NOTIFICATION_PREFERENCES));
   const [studyPreferences, setStudyPreferences] = useState<StudyPreferences>(() => storage.get(StorageKeys.STUDY_PREFS, INITIAL_STUDY_PREFERENCES));
 
@@ -268,18 +306,63 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const resTasks = await fetch('/api/tasks');
           if (resTasks.ok) {
             const apiTasks = await resTasks.json();
-            if (Array.isArray(apiTasks) && apiTasks.length > 0 && isMounted) {
-              setTasks(apiTasks);
-            }
+            if (Array.isArray(apiTasks) && apiTasks.length > 0 && isMounted) setTasks(apiTasks);
           }
         } catch {}
         try {
           const resSubjects = await fetch('/api/subjects');
           if (resSubjects.ok) {
             const apiSubjects = await resSubjects.json();
-            if (Array.isArray(apiSubjects) && apiSubjects.length > 0 && isMounted) {
-              setSubjects(apiSubjects);
-            }
+            if (Array.isArray(apiSubjects) && apiSubjects.length > 0 && isMounted) setSubjects(apiSubjects);
+          }
+        } catch {}
+        try {
+          const resTimetable = await fetch('/api/timetable');
+          if (resTimetable.ok) {
+            const apiTimetable = await resTimetable.json();
+            if (Array.isArray(apiTimetable) && apiTimetable.length > 0 && isMounted) setTimetableSlots(apiTimetable);
+          }
+        } catch {}
+        try {
+          const resExams = await fetch('/api/exams');
+          if (resExams.ok) {
+            const apiExams = await resExams.json();
+            if (Array.isArray(apiExams) && apiExams.length > 0 && isMounted) setExams(apiExams);
+          }
+        } catch {}
+        try {
+          const resGoals = await fetch('/api/goals');
+          if (resGoals.ok) {
+            const apiGoals = await resGoals.json();
+            if (Array.isArray(apiGoals) && apiGoals.length > 0 && isMounted) setGoals(apiGoals);
+          }
+        } catch {}
+        try {
+          const resNotes = await fetch('/api/notes');
+          if (resNotes.ok) {
+            const apiNotes = await resNotes.json();
+            if (Array.isArray(apiNotes) && apiNotes.length > 0 && isMounted) setNotes(apiNotes);
+          }
+        } catch {}
+        try {
+          const resResources = await fetch('/api/resources');
+          if (resResources.ok) {
+            const apiResources = await resResources.json();
+            if (Array.isArray(apiResources) && apiResources.length > 0 && isMounted) setResources(apiResources);
+          }
+        } catch {}
+        try {
+          const resRevision = await fetch('/api/revision-topics');
+          if (resRevision.ok) {
+            const apiRev = await resRevision.json();
+            if (Array.isArray(apiRev) && apiRev.length > 0 && isMounted) setRevisionTopics(apiRev);
+          }
+        } catch {}
+        try {
+          const resDaily = await fetch('/api/daily-plans');
+          if (resDaily.ok) {
+            const apiDaily = await resDaily.json();
+            if (Array.isArray(apiDaily) && apiDaily.length > 0 && isMounted) setDailyPlans(apiDaily);
           }
         } catch {}
       };
@@ -294,9 +377,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fetch Subjects
         let cloudSubjects = await supabaseService.fetchSubjects();
         if (cloudSubjects.length === 0) {
-          for (const s of INITIAL_SUBJECTS) {
-            await supabaseService.upsertSubject(s);
-          }
+          for (const s of INITIAL_SUBJECTS) await supabaseService.upsertSubject(s);
           cloudSubjects = INITIAL_SUBJECTS;
         }
         if (isMounted) setSubjects(cloudSubjects);
@@ -304,12 +385,18 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fetch Tasks
         let cloudTasks = await supabaseService.fetchTasks();
         if (cloudTasks.length === 0) {
-          for (const t of INITIAL_TASKS) {
-            await supabaseService.upsertTask(t);
-          }
+          for (const t of INITIAL_TASKS) await supabaseService.upsertTask(t);
           cloudTasks = INITIAL_TASKS;
         }
         if (isMounted) setTasks(cloudTasks);
+
+        // Fetch Timetable Slots
+        let cloudTimetable = await supabaseService.fetchTimetableSlots();
+        if (cloudTimetable.length === 0) {
+          for (const slot of INITIAL_TIMETABLE_SLOTS) await supabaseService.upsertTimetableSlot(slot);
+          cloudTimetable = INITIAL_TIMETABLE_SLOTS;
+        }
+        if (isMounted) setTimetableSlots(cloudTimetable);
 
         // Fetch Exams
         const cloudExams = await supabaseService.fetchExams();
@@ -327,6 +414,22 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const cloudResources = await supabaseService.fetchResources();
         if (cloudResources.length > 0 && isMounted) setResources(cloudResources);
 
+        // Fetch Revision Topics
+        const cloudRevision = await supabaseService.fetchRevisionTopics();
+        if (cloudRevision.length > 0 && isMounted) setRevisionTopics(cloudRevision);
+
+        // Fetch Announcements
+        const cloudAnnouncements = await supabaseService.fetchAnnouncements();
+        if (cloudAnnouncements.length > 0 && isMounted) setAnnouncements(cloudAnnouncements);
+
+        // Fetch Daily Plans
+        const cloudDailyPlans = await supabaseService.fetchDailyPlans();
+        if (cloudDailyPlans.length > 0 && isMounted) setDailyPlans(cloudDailyPlans);
+
+        // Fetch Focus Sessions
+        const cloudFocus = await supabaseService.fetchFocusSessions();
+        if (cloudFocus.length > 0 && isMounted) setFocusSessions(cloudFocus);
+
         if (isMounted) setIsSupabaseConnected(true);
       } catch (err) {
         console.error('Supabase initial fetch error:', err);
@@ -335,7 +438,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     syncCloudData();
 
-    // Subscribe to realtime postgres updates across clients
+    // Subscribe to realtime postgres updates across all 11 tables
     const unsubTasks = supabaseService.subscribeToChanges('tasks', async () => {
       const updated = await supabaseService.fetchTasks();
       if (isMounted && updated.length > 0) setTasks(updated);
@@ -346,10 +449,64 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isMounted && updated.length > 0) setSubjects(updated);
     });
 
+    const unsubTimetable = supabaseService.subscribeToChanges('timetable_slots', async () => {
+      const updated = await supabaseService.fetchTimetableSlots();
+      if (isMounted && updated.length > 0) setTimetableSlots(updated);
+    });
+
+    const unsubExams = supabaseService.subscribeToChanges('exams', async () => {
+      const updated = await supabaseService.fetchExams();
+      if (isMounted && updated.length > 0) setExams(updated);
+    });
+
+    const unsubGoals = supabaseService.subscribeToChanges('goals', async () => {
+      const updated = await supabaseService.fetchGoals();
+      if (isMounted && updated.length > 0) setGoals(updated);
+    });
+
+    const unsubNotes = supabaseService.subscribeToChanges('notes', async () => {
+      const updated = await supabaseService.fetchNotes();
+      if (isMounted && updated.length > 0) setNotes(updated);
+    });
+
+    const unsubResources = supabaseService.subscribeToChanges('resources', async () => {
+      const updated = await supabaseService.fetchResources();
+      if (isMounted && updated.length > 0) setResources(updated);
+    });
+
+    const unsubRevision = supabaseService.subscribeToChanges('revision_topics', async () => {
+      const updated = await supabaseService.fetchRevisionTopics();
+      if (isMounted && updated.length > 0) setRevisionTopics(updated);
+    });
+
+    const unsubAnnouncements = supabaseService.subscribeToChanges('announcements', async () => {
+      const updated = await supabaseService.fetchAnnouncements();
+      if (isMounted && updated.length > 0) setAnnouncements(updated);
+    });
+
+    const unsubDailyPlans = supabaseService.subscribeToChanges('daily_plans', async () => {
+      const updated = await supabaseService.fetchDailyPlans();
+      if (isMounted && updated.length > 0) setDailyPlans(updated);
+    });
+
+    const unsubFocus = supabaseService.subscribeToChanges('focus_sessions', async () => {
+      const updated = await supabaseService.fetchFocusSessions();
+      if (isMounted && updated.length > 0) setFocusSessions(updated);
+    });
+
     return () => {
       isMounted = false;
       unsubTasks();
       unsubSubjects();
+      unsubTimetable();
+      unsubExams();
+      unsubGoals();
+      unsubNotes();
+      unsubResources();
+      unsubRevision();
+      unsubAnnouncements();
+      unsubDailyPlans();
+      unsubFocus();
     };
   }, []);
 
@@ -415,6 +572,57 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
           broadcast: false,
           chimeType: event.payload.priority === 'urgent' ? 'alert' : 'warning'
         });
+      } else if (event.type === 'TIMETABLE_CHANGED') {
+        if (event.payload?.slots) {
+          setTimetableSlots(event.payload.slots);
+        } else if (supabaseService.isAvailable()) {
+          supabaseService.fetchTimetableSlots().then(slots => {
+            if (slots.length > 0) setTimetableSlots(slots);
+          });
+        } else {
+          fetch('/api/timetable')
+            .then(r => r.ok ? r.json() : null)
+            .then(apiSlots => {
+              if (Array.isArray(apiSlots) && apiSlots.length > 0) setTimetableSlots(apiSlots);
+            })
+            .catch(() => {});
+        }
+        if (event.payload?.title) {
+          triggerWebsiteNotification({
+            type: 'system',
+            title: '📅 Timetable Updated',
+            message: event.payload.title || 'Class schedule was updated',
+            broadcast: false,
+            chimeType: 'success'
+          });
+        }
+      } else if (event.type === 'EXAMS_CHANGED') {
+        if (event.payload?.exams) setExams(event.payload.exams);
+        else if (supabaseService.isAvailable()) supabaseService.fetchExams().then(e => e.length > 0 && setExams(e));
+        else fetch('/api/exams').then(r => r.ok ? r.json() : null).then(e => Array.isArray(e) && setExams(e)).catch(() => {});
+      } else if (event.type === 'GOALS_CHANGED') {
+        if (event.payload?.goals) setGoals(event.payload.goals);
+        else if (supabaseService.isAvailable()) supabaseService.fetchGoals().then(g => g.length > 0 && setGoals(g));
+        else fetch('/api/goals').then(r => r.ok ? r.json() : null).then(g => Array.isArray(g) && setGoals(g)).catch(() => {});
+      } else if (event.type === 'NOTES_CHANGED') {
+        if (event.payload?.notes) setNotes(event.payload.notes);
+        else if (supabaseService.isAvailable()) supabaseService.fetchNotes().then(n => n.length > 0 && setNotes(n));
+        else fetch('/api/notes').then(r => r.ok ? r.json() : null).then(n => Array.isArray(n) && setNotes(n)).catch(() => {});
+      } else if (event.type === 'RESOURCES_CHANGED') {
+        if (event.payload?.resources) setResources(event.payload.resources);
+        else if (supabaseService.isAvailable()) supabaseService.fetchResources().then(r => r.length > 0 && setResources(r));
+        else fetch('/api/resources').then(r => r.ok ? r.json() : null).then(r => Array.isArray(r) && setResources(r)).catch(() => {});
+      } else if (event.type === 'REVISION_CHANGED') {
+        if (event.payload?.revisionTopics) setRevisionTopics(event.payload.revisionTopics);
+        else if (supabaseService.isAvailable()) supabaseService.fetchRevisionTopics().then(rev => rev.length > 0 && setRevisionTopics(rev));
+        else fetch('/api/revision-topics').then(r => r.ok ? r.json() : null).then(rev => Array.isArray(rev) && setRevisionTopics(rev)).catch(() => {});
+      } else if (event.type === 'DAILY_PLANS_CHANGED') {
+        if (event.payload?.dailyPlans) setDailyPlans(event.payload.dailyPlans);
+        else if (supabaseService.isAvailable()) supabaseService.fetchDailyPlans().then(dp => dp.length > 0 && setDailyPlans(dp));
+        else fetch('/api/daily-plans').then(r => r.ok ? r.json() : null).then(dp => Array.isArray(dp) && setDailyPlans(dp)).catch(() => {});
+      } else if (event.type === 'FOCUS_CHANGED') {
+        if (event.payload?.focusSessions) setFocusSessions(event.payload.focusSessions);
+        else if (supabaseService.isAvailable()) supabaseService.fetchFocusSessions().then(fs => fs.length > 0 && setFocusSessions(fs));
       }
     });
     return () => unsubscribe();
@@ -872,6 +1080,23 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return s;
       })
     );
+
+    // Cascade updated professor/teacherName to all timetable slots of this subject
+    const newProf = data.professor || data.teacherName;
+    if (newProf) {
+      setTimetableSlots(prev =>
+        prev.map(slot => {
+          if (slot.subjectId === id) {
+            const updatedSlot = { ...slot, professor: newProf };
+            if (supabaseService.isAvailable()) {
+              supabaseService.upsertTimetableSlot(updatedSlot);
+            }
+            return updatedSlot;
+          }
+          return slot;
+        })
+      );
+    }
   };
 
   const deleteSubject = (id: string): void => {
@@ -882,10 +1107,21 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // ============================================================
-  // Timetable Actions
+  // Timetable Actions (Realtime Sync & Faculty Auto-Assignment)
   // ============================================================
 
   const addTimetableSlot = (data: Partial<TimetableSlot>): TimetableSlot => {
+    // Auto-resolve professor from subjects if not explicitly given
+    let prof = data.professor?.trim();
+    if (!prof && data.subjectId) {
+      const sub = subjects.find(s => s.id === data.subjectId);
+      if (sub) prof = sub.professor || sub.teacherName;
+    }
+    if (!prof && data.subjectName) {
+      const sub = subjects.find(s => s.name.toLowerCase() === data.subjectName?.toLowerCase());
+      if (sub) prof = sub.professor || sub.teacherName;
+    }
+
     const newSlot: TimetableSlot = {
       id: generateId('tt'),
       day: data.day || 'Monday',
@@ -895,23 +1131,89 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subjectCode: data.subjectCode,
       subjectName: data.subjectName || 'Lecture / Class',
       room: data.room || '',
-      professor: data.professor || '',
+      professor: prof || '',
       type: data.type || 'lecture',
       color: data.color || '#3b82f6',
       notes: data.notes || ''
     };
-    setTimetableSlots(prev => [...prev, newSlot]);
+
+    setTimetableSlots(prev => {
+      const nextSlots = [...prev, newSlot];
+      broadcastPostEvent({
+        type: 'TIMETABLE_CHANGED',
+        payload: { slots: nextSlots, title: `New class added: ${newSlot.subjectName}` }
+      });
+      return nextSlots;
+    });
+
     logActivity('added timetable class slot', newSlot.subjectName, 'task', newSlot.id);
+
+    // Sync to Supabase & Central Server
+    if (supabaseService.isAvailable()) {
+      supabaseService.upsertTimetableSlot(newSlot);
+    }
+    fetch('/api/timetable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newSlot)
+    }).catch(() => {});
+
     return newSlot;
   };
 
   const updateTimetableSlot = (id: string, data: Partial<TimetableSlot>): void => {
-    setTimetableSlots(prev => prev.map(s => s.id === id ? { ...s, ...data } : s));
+    setTimetableSlots(prev => {
+      const nextSlots = prev.map(s => {
+        if (s.id === id) {
+          let prof = data.professor !== undefined ? data.professor.trim() : s.professor;
+          if (!prof && (data.subjectId || s.subjectId)) {
+            const sub = subjects.find(subItem => subItem.id === (data.subjectId || s.subjectId));
+            if (sub) prof = sub.professor || sub.teacherName;
+          }
+          const updatedSlot = { ...s, ...data, professor: prof };
+
+          if (supabaseService.isAvailable()) {
+            supabaseService.upsertTimetableSlot(updatedSlot);
+          }
+          fetch(`/api/timetable/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedSlot)
+          }).catch(() => {});
+
+          return updatedSlot;
+        }
+        return s;
+      });
+
+      broadcastPostEvent({
+        type: 'TIMETABLE_CHANGED',
+        payload: { slots: nextSlots, title: 'Class timetable slot updated' }
+      });
+
+      return nextSlots;
+    });
   };
 
   const deleteTimetableSlot = (id: string): void => {
-    setTimetableSlots(prev => prev.filter(s => s.id !== id));
+    setTimetableSlots(prev => {
+      const nextSlots = prev.filter(s => s.id !== id);
+      broadcastPostEvent({
+        type: 'TIMETABLE_CHANGED',
+        payload: { slots: nextSlots, title: 'Class slot removed' }
+      });
+      return nextSlots;
+    });
+
+    if (supabaseService.isAvailable()) {
+      supabaseService.deleteTimetableSlot(id);
+    }
+    fetch(`/api/timetable/${id}`, { method: 'DELETE' }).catch(() => {});
   };
+
+  // ============================================================
+  // Exam Actions
+  // ============================================================
 
   // ============================================================
   // Exam Actions
@@ -933,17 +1235,44 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    setExams(prev => [newExam, ...prev]);
+
+    setExams(prev => {
+      const nextExams = [newExam, ...prev];
+      broadcastPostEvent({ type: 'EXAMS_CHANGED', payload: { exams: nextExams } });
+      return nextExams;
+    });
+
     logActivity('added exam', newExam.title, 'exam', newExam.id);
+    if (supabaseService.isAvailable()) supabaseService.upsertExam(newExam);
+    fetch('/api/exams', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newExam) }).catch(() => {});
+
     return newExam;
   };
 
   const updateExam = (id: string, data: Partial<Exam>): void => {
-    setExams(prev => prev.map(e => e.id === id ? { ...e, ...data, updatedAt: new Date().toISOString() } : e));
+    setExams(prev => {
+      const nextExams = prev.map(e => {
+        if (e.id === id) {
+          const updated = { ...e, ...data, updatedAt: new Date().toISOString() };
+          if (supabaseService.isAvailable()) supabaseService.upsertExam(updated);
+          fetch(`/api/exams/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => {});
+          return updated;
+        }
+        return e;
+      });
+      broadcastPostEvent({ type: 'EXAMS_CHANGED', payload: { exams: nextExams } });
+      return nextExams;
+    });
   };
 
   const deleteExam = (id: string): void => {
-    setExams(prev => prev.filter(e => e.id !== id));
+    setExams(prev => {
+      const nextExams = prev.filter(e => e.id !== id);
+      broadcastPostEvent({ type: 'EXAMS_CHANGED', payload: { exams: nextExams } });
+      return nextExams;
+    });
+    if (supabaseService.isAvailable()) supabaseService.deleteExam(id);
+    fetch(`/api/exams/${id}`, { method: 'DELETE' }).catch(() => {});
   };
 
   // ============================================================
@@ -965,17 +1294,44 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    setGoals(prev => [newGoal, ...prev]);
+
+    setGoals(prev => {
+      const nextGoals = [newGoal, ...prev];
+      broadcastPostEvent({ type: 'GOALS_CHANGED', payload: { goals: nextGoals } });
+      return nextGoals;
+    });
+
     logActivity('created goal', newGoal.title, 'goal', newGoal.id);
+    if (supabaseService.isAvailable()) supabaseService.upsertGoal(newGoal);
+    fetch('/api/goals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newGoal) }).catch(() => {});
+
     return newGoal;
   };
 
   const updateGoal = (id: string, data: Partial<Goal>): void => {
-    setGoals(prev => prev.map(g => g.id === id ? { ...g, ...data, updatedAt: new Date().toISOString() } : g));
+    setGoals(prev => {
+      const nextGoals = prev.map(g => {
+        if (g.id === id) {
+          const updated = { ...g, ...data, updatedAt: new Date().toISOString() };
+          if (supabaseService.isAvailable()) supabaseService.upsertGoal(updated);
+          fetch(`/api/goals/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => {});
+          return updated;
+        }
+        return g;
+      });
+      broadcastPostEvent({ type: 'GOALS_CHANGED', payload: { goals: nextGoals } });
+      return nextGoals;
+    });
   };
 
   const deleteGoal = (id: string): void => {
-    setGoals(prev => prev.filter(g => g.id !== id));
+    setGoals(prev => {
+      const nextGoals = prev.filter(g => g.id !== id);
+      broadcastPostEvent({ type: 'GOALS_CHANGED', payload: { goals: nextGoals } });
+      return nextGoals;
+    });
+    if (supabaseService.isAvailable()) supabaseService.deleteGoal(id);
+    fetch(`/api/goals/${id}`, { method: 'DELETE' }).catch(() => {});
   };
 
   // ============================================================
@@ -995,17 +1351,44 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    setNotes(prev => [newNote, ...prev]);
+
+    setNotes(prev => {
+      const nextNotes = [newNote, ...prev];
+      broadcastPostEvent({ type: 'NOTES_CHANGED', payload: { notes: nextNotes } });
+      return nextNotes;
+    });
+
     logActivity('created note', newNote.title, 'note', newNote.id);
+    if (supabaseService.isAvailable()) supabaseService.upsertNote(newNote);
+    fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newNote) }).catch(() => {});
+
     return newNote;
   };
 
   const updateNote = (id: string, data: Partial<Note>): void => {
-    setNotes(prev => prev.map(n => n.id === id ? { ...n, ...data, updatedAt: new Date().toISOString() } : n));
+    setNotes(prev => {
+      const nextNotes = prev.map(n => {
+        if (n.id === id) {
+          const updated = { ...n, ...data, updatedAt: new Date().toISOString() };
+          if (supabaseService.isAvailable()) supabaseService.upsertNote(updated);
+          fetch(`/api/notes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => {});
+          return updated;
+        }
+        return n;
+      });
+      broadcastPostEvent({ type: 'NOTES_CHANGED', payload: { notes: nextNotes } });
+      return nextNotes;
+    });
   };
 
   const deleteNote = (id: string): void => {
-    setNotes(prev => prev.filter(n => n.id !== id));
+    setNotes(prev => {
+      const nextNotes = prev.filter(n => n.id !== id);
+      broadcastPostEvent({ type: 'NOTES_CHANGED', payload: { notes: nextNotes } });
+      return nextNotes;
+    });
+    if (supabaseService.isAvailable()) supabaseService.deleteNote(id);
+    fetch(`/api/notes/${id}`, { method: 'DELETE' }).catch(() => {});
   };
 
   // ============================================================
@@ -1025,16 +1408,43 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    setResources(prev => [newResource, ...prev]);
+
+    setResources(prev => {
+      const nextRes = [newResource, ...prev];
+      broadcastPostEvent({ type: 'RESOURCES_CHANGED', payload: { resources: nextRes } });
+      return nextRes;
+    });
+
+    if (supabaseService.isAvailable()) supabaseService.upsertResource(newResource);
+    fetch('/api/resources', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newResource) }).catch(() => {});
+
     return newResource;
   };
 
   const updateResource = (id: string, data: Partial<Resource>): void => {
-    setResources(prev => prev.map(r => r.id === id ? { ...r, ...data, updatedAt: new Date().toISOString() } : r));
+    setResources(prev => {
+      const nextRes = prev.map(r => {
+        if (r.id === id) {
+          const updated = { ...r, ...data, updatedAt: new Date().toISOString() };
+          if (supabaseService.isAvailable()) supabaseService.upsertResource(updated);
+          fetch(`/api/resources/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => {});
+          return updated;
+        }
+        return r;
+      });
+      broadcastPostEvent({ type: 'RESOURCES_CHANGED', payload: { resources: nextRes } });
+      return nextRes;
+    });
   };
 
   const deleteResource = (id: string): void => {
-    setResources(prev => prev.filter(r => r.id !== id));
+    setResources(prev => {
+      const nextRes = prev.filter(r => r.id !== id);
+      broadcastPostEvent({ type: 'RESOURCES_CHANGED', payload: { resources: nextRes } });
+      return nextRes;
+    });
+    if (supabaseService.isAvailable()) supabaseService.deleteResource(id);
+    fetch(`/api/resources/${id}`, { method: 'DELETE' }).catch(() => {});
   };
 
   // ============================================================
@@ -1053,16 +1463,43 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    setRevisionTopics(prev => [newTopic, ...prev]);
+
+    setRevisionTopics(prev => {
+      const nextTopics = [newTopic, ...prev];
+      broadcastPostEvent({ type: 'REVISION_CHANGED', payload: { revisionTopics: nextTopics } });
+      return nextTopics;
+    });
+
+    if (supabaseService.isAvailable()) supabaseService.upsertRevisionTopic(newTopic);
+    fetch('/api/revision-topics', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTopic) }).catch(() => {});
+
     return newTopic;
   };
 
   const updateRevisionTopic = (id: string, data: Partial<RevisionTopic>): void => {
-    setRevisionTopics(prev => prev.map(r => r.id === id ? { ...r, ...data, updatedAt: new Date().toISOString() } : r));
+    setRevisionTopics(prev => {
+      const nextTopics = prev.map(r => {
+        if (r.id === id) {
+          const updated = { ...r, ...data, updatedAt: new Date().toISOString() };
+          if (supabaseService.isAvailable()) supabaseService.upsertRevisionTopic(updated);
+          fetch(`/api/revision-topics/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => {});
+          return updated;
+        }
+        return r;
+      });
+      broadcastPostEvent({ type: 'REVISION_CHANGED', payload: { revisionTopics: nextTopics } });
+      return nextTopics;
+    });
   };
 
   const deleteRevisionTopic = (id: string): void => {
-    setRevisionTopics(prev => prev.filter(r => r.id !== id));
+    setRevisionTopics(prev => {
+      const nextTopics = prev.filter(r => r.id !== id);
+      broadcastPostEvent({ type: 'REVISION_CHANGED', payload: { revisionTopics: nextTopics } });
+      return nextTopics;
+    });
+    if (supabaseService.isAvailable()) supabaseService.deleteRevisionTopic(id);
+    fetch(`/api/revision-topics/${id}`, { method: 'DELETE' }).catch(() => {});
   };
 
   // ============================================================
@@ -1072,13 +1509,16 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const saveDailyPlan = (plan: DailyPlan): void => {
     setDailyPlans(prev => {
       const existing = prev.findIndex(p => p.date === plan.date);
-      if (existing >= 0) {
-        const updated = [...prev];
-        updated[existing] = plan;
-        return updated;
-      }
-      return [plan, ...prev];
+      const updated = existing >= 0
+        ? prev.map((p, idx) => idx === existing ? plan : p)
+        : [plan, ...prev];
+
+      broadcastPostEvent({ type: 'DAILY_PLANS_CHANGED', payload: { dailyPlans: updated } });
+      return updated;
     });
+
+    if (supabaseService.isAvailable()) supabaseService.upsertDailyPlan(plan);
+    fetch('/api/daily-plans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(plan) }).catch(() => {});
   };
 
   const getTodayPlan = (): DailyPlan | null => {
@@ -1109,6 +1549,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Focus Sessions
   // ============================================================
 
+  // ============================================================
+  // Focus Sessions
+  // ============================================================
+
   const addFocusSession = async (session: {
     taskId?: string;
     taskTitle?: string;
@@ -1127,7 +1571,15 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       startedAt: new Date(Date.now() - session.durationMinutes * 60000).toISOString(),
       completedAt: new Date().toISOString()
     };
-    setFocusSessions(prev => [newSession, ...prev]);
+    setFocusSessions(prev => {
+      const nextFocus = [newSession, ...prev];
+      broadcastPostEvent({ type: 'FOCUS_CHANGED', payload: { focusSessions: nextFocus } });
+      return nextFocus;
+    });
+
+    if (supabaseService.isAvailable()) supabaseService.upsertFocusSession(newSession);
+    fetch('/api/focus-sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newSession) }).catch(() => {});
+
     triggerCompletionConfetti();
     logActivity(`completed ${session.durationMinutes}m focus session`, session.taskTitle || 'Free study', 'task', session.taskId || 'free');
   };
@@ -1168,6 +1620,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isRead: false
     };
     setAnnouncements(prev => [newAnn, ...prev]);
+
+    if (supabaseService.isAvailable()) supabaseService.upsertAnnouncement(newAnn);
+    fetch('/api/announcements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newAnn) }).catch(() => {});
+
     const subjectObj = subjects.find(s => s.id === newAnn.subjectId);
     const newNotif: AppNotification = {
       id: generateId('notif'),
@@ -1202,6 +1658,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: 'Incorrect authorization passcode. Deletion denied.' };
     }
     setAnnouncements(prev => prev.filter(a => a.id !== annId));
+    if (supabaseService.isAvailable()) supabaseService.deleteAnnouncement(annId);
+    fetch(`/api/announcements/${annId}`, { method: 'DELETE' }).catch(() => {});
     return { success: true };
   };
 

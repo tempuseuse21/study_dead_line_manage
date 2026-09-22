@@ -48,6 +48,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
               Academic OS
             </span>
             <span
+              title="Real-Time Portal Data Sync Active — All changes by any user reflect live across all connected sessions"
+              className="hidden md:inline-flex items-center gap-1 text-[0.65rem] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Portal Live Synced</span>
+            </span>
+            <span
               title={isSupabaseConnected ? 'Connected to Supabase Cloud DB — Real-Time Multi-Device Sync Active' : 'Running in Local Storage Mode — Add VITE_SUPABASE_URL to connect Supabase Cloud DB'}
               className={`hidden sm:inline-flex items-center gap-1 text-[0.65rem] font-mono font-semibold px-2 py-0.5 rounded-full border ${
                 isSupabaseConnected

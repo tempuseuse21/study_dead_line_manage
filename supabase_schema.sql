@@ -191,6 +191,24 @@ CREATE TABLE IF NOT EXISTS public.daily_plans (
     reviewed_at TEXT
 );
 
+-- 12. Timetable Slots Table
+CREATE TABLE IF NOT EXISTS public.timetable_slots (
+    id TEXT PRIMARY KEY,
+    day TEXT NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    subject_id TEXT REFERENCES public.subjects(id) ON DELETE SET NULL,
+    subject_code TEXT,
+    subject_name TEXT NOT NULL,
+    room TEXT,
+    professor TEXT,
+    type TEXT DEFAULT 'lecture',
+    color TEXT DEFAULT '#3b82f6',
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Enable Row Level Security (RLS) & Grant Public Access for quick multi-device sharing
 ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
@@ -203,6 +221,7 @@ ALTER TABLE public.focus_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.daily_plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.timetable_slots ENABLE ROW LEVEL SECURITY;
 
 -- Permissive public policies for seamless sync
 CREATE POLICY "Public full access on subjects" ON public.subjects FOR ALL USING (true) WITH CHECK (true);
@@ -216,6 +235,7 @@ CREATE POLICY "Public full access on focus_sessions" ON public.focus_sessions FO
 CREATE POLICY "Public full access on announcements" ON public.announcements FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public full access on activities" ON public.activities FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public full access on daily_plans" ON public.daily_plans FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public full access on timetable_slots" ON public.timetable_slots FOR ALL USING (true) WITH CHECK (true);
 
 -- Enable Realtime publication for tables so cross-device sync happens instantly
 ALTER PUBLICATION supabase_realtime ADD TABLE public.subjects;
@@ -229,3 +249,4 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.focus_sessions;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.announcements;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.activities;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.daily_plans;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.timetable_slots;

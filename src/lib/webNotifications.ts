@@ -55,7 +55,20 @@ try {
 } catch {}
 
 export function broadcastPostEvent(event: {
-  type: 'NEW_TASK' | 'NEW_ANNOUNCEMENT' | 'TASK_STATUS_CHANGED';
+  type:
+    | 'NEW_TASK'
+    | 'NEW_ANNOUNCEMENT'
+    | 'TASK_STATUS_CHANGED'
+    | 'TIMETABLE_CHANGED'
+    | 'PORTAL_DATA_CHANGED'
+    | 'EXAMS_CHANGED'
+    | 'GOALS_CHANGED'
+    | 'NOTES_CHANGED'
+    | 'RESOURCES_CHANGED'
+    | 'REVISION_CHANGED'
+    | 'ANNOUNCEMENTS_CHANGED'
+    | 'DAILY_PLANS_CHANGED'
+    | 'FOCUS_CHANGED';
   payload: any;
 }) {
   try {

@@ -20,8 +20,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     id: 'sub_it615',
     name: 'Database Management System',
     code: 'IT615',
-    teacherName: 'Prof. Ramesh Kulkarni',
-    professor: 'Prof. Ramesh Kulkarni',
+    teacherName: 'Prof. Minal Bhise',
+    professor: 'Prof. Minal Bhise',
     description:
       'Relational model, SQL DDL/DML, ER-to-Relational mapping, Normalization (1NF–BCNF), Indexing (B+ Trees), and ACID Transaction management.',
     color: '#3b82f6',
@@ -36,8 +36,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     id: 'sub_sc612',
     name: 'Discrete Mathematics',
     code: 'SC612',
-    teacherName: 'Dr. Sunita Deshmukh',
-    professor: 'Dr. Sunita Deshmukh',
+    teacherName: 'Prof. Gopinath Panda',
+    professor: 'Prof. Gopinath Panda',
     description:
       'Set theory, Propositional and Predicate logic, Graph theory (Euler/Hamiltonian paths, Trees, Planarity), Combinatorics, and Recurrence relations.',
     color: '#8b5cf6',
@@ -52,8 +52,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     id: 'sub_pc613',
     name: 'Communication Skills',
     code: 'PC613',
-    teacherName: 'Dr. Ananya Roy',
-    professor: 'Dr. Ananya Roy',
+    teacherName: 'Prof. Nandini Banerjee',
+    professor: 'Prof. Nandini Banerjee',
     description:
       'Technical writing, IEEE/ACM research paper structure, executive summary synthesis, academic presentations, and professional speaking.',
     color: '#f59e0b',
@@ -68,8 +68,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     id: 'sub_it603',
     name: 'Introduction to Programming',
     code: 'IT603',
-    teacherName: 'Prof. Amit Shah',
-    professor: 'Prof. Amit Shah',
+    teacherName: 'Prof. Sandeep Modha',
+    professor: 'Prof. Sandeep Modha',
     description:
       'Core programming constructs, pointers, memory allocation, object-oriented concepts, exception handling, and modular software design in C++/Python.',
     color: '#10b981',
@@ -84,8 +84,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     id: 'sub_it639',
     name: 'Data Structures & Algorithms',
     code: 'IT639',
-    teacherName: 'Prof. Hitesh Bhatt',
-    professor: 'Prof. Hitesh Bhatt',
+    teacherName: 'Prof. Supantha Pandit',
+    professor: 'Prof. Supantha Pandit',
     description:
       'Arrays, Linked Lists, Stacks, Queues, Balanced Search Trees (AVL, Red-Black), Graph Algorithms (BFS/DFS, Dijkstra, Kruskal), Dynamic Programming, and asymptotic analysis.',
     color: '#ec4899',
@@ -277,7 +277,7 @@ export const INITIAL_TIMETABLE_SLOTS = [
     subjectCode: 'IT615',
     subjectName: 'Database Management System',
     room: 'LH-101',
-    professor: 'Prof. Ramesh Kulkarni',
+    professor: 'Prof. Minal Bhise',
     type: 'lecture' as const,
     color: '#3b82f6'
   },
@@ -290,7 +290,7 @@ export const INITIAL_TIMETABLE_SLOTS = [
     subjectCode: 'SC612',
     subjectName: 'Discrete Mathematics',
     room: 'LH-102',
-    professor: 'Dr. Sunita Deshmukh',
+    professor: 'Prof. Gopinath Panda',
     type: 'lecture' as const,
     color: '#8b5cf6'
   },
@@ -303,7 +303,7 @@ export const INITIAL_TIMETABLE_SLOTS = [
     subjectCode: 'IT615',
     subjectName: 'DBMS Lab Session',
     room: 'Computer Lab 3',
-    professor: 'Prof. Ramesh Kulkarni',
+    professor: 'Prof. Minal Bhise',
     type: 'lab' as const,
     color: '#3b82f6'
   },
@@ -316,7 +316,7 @@ export const INITIAL_TIMETABLE_SLOTS = [
     subjectCode: 'IT603',
     subjectName: 'Introduction to Programming',
     room: 'LH-103',
-    professor: 'Prof. Amit Shah',
+    professor: 'Prof. Sandeep Modha',
     type: 'lecture' as const,
     color: '#10b981'
   },
@@ -329,7 +329,7 @@ export const INITIAL_TIMETABLE_SLOTS = [
     subjectCode: 'IT639',
     subjectName: 'Data Structures & Algorithms',
     room: 'LH-101',
-    professor: 'Prof. Hitesh Bhatt',
+    professor: 'Prof. Supantha Pandit',
     type: 'lecture' as const,
     color: '#ec4899'
   },
@@ -342,7 +342,7 @@ export const INITIAL_TIMETABLE_SLOTS = [
     subjectCode: 'PC613',
     subjectName: 'Communication Skills',
     room: 'Seminar Hall B',
-    professor: 'Dr. Ananya Roy',
+    professor: 'Prof. Nandini Banerjee',
     type: 'lecture' as const,
     color: '#f59e0b'
   },
@@ -355,7 +355,7 @@ export const INITIAL_TIMETABLE_SLOTS = [
     subjectCode: 'IT639',
     subjectName: 'DSA Practical Lab',
     room: 'Advanced Software Lab 1',
-    professor: 'Prof. Hitesh Bhatt',
+    professor: 'Prof. Supantha Pandit',
     type: 'lab' as const,
     color: '#ec4899'
   },
@@ -368,7 +368,7 @@ export const INITIAL_TIMETABLE_SLOTS = [
     subjectCode: 'SC612',
     subjectName: 'Discrete Mathematics Tutorial',
     room: 'LH-102',
-    professor: 'Dr. Sunita Deshmukh',
+    professor: 'Prof. Gopinath Panda',
     type: 'tutorial' as const,
     color: '#8b5cf6'
   },
@@ -381,7 +381,7 @@ export const INITIAL_TIMETABLE_SLOTS = [
     subjectCode: 'IT603',
     subjectName: 'C++/Python Programming Lab',
     room: 'Lab 2',
-    professor: 'Prof. Amit Shah',
+    professor: 'Prof. Sandeep Modha',
     type: 'lab' as const,
     color: '#10b981'
   }

@@ -6,16 +6,40 @@ import {
   INITIAL_NOTIFICATION_PREFERENCES,
   INITIAL_SUBJECTS,
   INITIAL_TASKS,
-  INITIAL_ANNOUNCEMENTS
+  INITIAL_ANNOUNCEMENTS,
+  INITIAL_TIMETABLE_SLOTS,
+  getInitialExams,
+  getInitialGoals
 } from '../src/lib/initialData.js';
-import { ActivityLog, AppNotification, Subject, Task, FocusSession, ClassAnnouncement } from '../src/types.js';
+import {
+  ActivityLog,
+  AppNotification,
+  Subject,
+  Task,
+  FocusSession,
+  ClassAnnouncement,
+  TimetableSlot,
+  Exam,
+  Goal,
+  Note,
+  Resource,
+  RevisionTopic,
+  DailyPlan
+} from '../src/types.js';
 
-// In-Memory Database Store with exact 5 subjects
+// In-Memory Database Store
 let subjects: Subject[] = JSON.parse(JSON.stringify(INITIAL_SUBJECTS));
 let tasks: Task[] = JSON.parse(JSON.stringify(INITIAL_TASKS));
 let notifications: AppNotification[] = JSON.parse(JSON.stringify(INITIAL_NOTIFICATIONS));
 let activities: ActivityLog[] = JSON.parse(JSON.stringify(INITIAL_ACTIVITY));
 let announcements: ClassAnnouncement[] = JSON.parse(JSON.stringify(INITIAL_ANNOUNCEMENTS));
+let timetableSlots: TimetableSlot[] = JSON.parse(JSON.stringify(INITIAL_TIMETABLE_SLOTS));
+let exams: Exam[] = JSON.parse(JSON.stringify(getInitialExams()));
+let goals: Goal[] = JSON.parse(JSON.stringify(getInitialGoals()));
+let notes: Note[] = [];
+let resources: Resource[] = [];
+let revisionTopics: RevisionTopic[] = [];
+let dailyPlans: DailyPlan[] = [];
 let focusSessions: FocusSession[] = [];
 let notificationPreferences = { ...INITIAL_NOTIFICATION_PREFERENCES };
 
@@ -218,6 +242,145 @@ app.post('/api/focus-sessions', (req, res) => {
   };
   focusSessions.unshift(session);
   res.json({ success: true, session });
+});
+
+// Timetable API (Shared master timetable across all users)
+app.get('/api/timetable', (req, res) => {
+  res.json(timetableSlots);
+});
+
+app.post('/api/timetable', (req, res) => {
+  const slotData = req.body;
+  // Auto-resolve professor from subject if not provided
+  let prof = slotData.professor;
+  if (!prof && slotData.subjectId) {
+    const sub = subjects.find(s => s.id === slotData.subjectId);
+    if (sub) prof = sub.professor || sub.teacherName;
+  }
+  const newSlot: TimetableSlot = {
+    ...slotData,
+    id: slotData.id || `tt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    professor: prof || ''
+  };
+  timetableSlots.push(newSlot);
+  res.json({ success: true, slot: newSlot });
+});
+
+app.put('/api/timetable/:id', (req, res) => {
+  const { id } = req.params;
+  const index = timetableSlots.findIndex(s => s.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Timetable slot not found' });
+  }
+  const updatedSlot = { ...timetableSlots[index], ...req.body };
+  timetableSlots[index] = updatedSlot;
+  res.json({ success: true, slot: updatedSlot });
+});
+
+app.delete('/api/timetable/:id', (req, res) => {
+  const { id } = req.params;
+  timetableSlots = timetableSlots.filter(s => s.id !== id);
+  res.json({ success: true });
+});
+
+// Exams API
+app.get('/api/exams', (req, res) => res.json(exams));
+app.post('/api/exams', (req, res) => {
+  const newExam: Exam = { ...req.body, id: req.body.id || `exam_${Date.now()}` };
+  exams.unshift(newExam);
+  res.json({ success: true, exam: newExam });
+});
+app.put('/api/exams/:id', (req, res) => {
+  const { id } = req.params;
+  const idx = exams.findIndex(e => e.id === id);
+  if (idx !== -1) exams[idx] = { ...exams[idx], ...req.body };
+  res.json({ success: true, exam: exams[idx] });
+});
+app.delete('/api/exams/:id', (req, res) => {
+  exams = exams.filter(e => e.id !== req.params.id);
+  res.json({ success: true });
+});
+
+// Goals API
+app.get('/api/goals', (req, res) => res.json(goals));
+app.post('/api/goals', (req, res) => {
+  const newGoal: Goal = { ...req.body, id: req.body.id || `goal_${Date.now()}` };
+  goals.unshift(newGoal);
+  res.json({ success: true, goal: newGoal });
+});
+app.put('/api/goals/:id', (req, res) => {
+  const { id } = req.params;
+  const idx = goals.findIndex(g => g.id === id);
+  if (idx !== -1) goals[idx] = { ...goals[idx], ...req.body };
+  res.json({ success: true, goal: goals[idx] });
+});
+app.delete('/api/goals/:id', (req, res) => {
+  goals = goals.filter(g => g.id !== req.params.id);
+  res.json({ success: true });
+});
+
+// Notes API
+app.get('/api/notes', (req, res) => res.json(notes));
+app.post('/api/notes', (req, res) => {
+  const newNote: Note = { ...req.body, id: req.body.id || `note_${Date.now()}` };
+  notes.unshift(newNote);
+  res.json({ success: true, note: newNote });
+});
+app.put('/api/notes/:id', (req, res) => {
+  const { id } = req.params;
+  const idx = notes.findIndex(n => n.id === id);
+  if (idx !== -1) notes[idx] = { ...notes[idx], ...req.body };
+  res.json({ success: true, note: notes[idx] });
+});
+app.delete('/api/notes/:id', (req, res) => {
+  notes = notes.filter(n => n.id !== req.params.id);
+  res.json({ success: true });
+});
+
+// Resources API
+app.get('/api/resources', (req, res) => res.json(resources));
+app.post('/api/resources', (req, res) => {
+  const newRes: Resource = { ...req.body, id: req.body.id || `res_${Date.now()}` };
+  resources.unshift(newRes);
+  res.json({ success: true, resource: newRes });
+});
+app.put('/api/resources/:id', (req, res) => {
+  const { id } = req.params;
+  const idx = resources.findIndex(r => r.id === id);
+  if (idx !== -1) resources[idx] = { ...resources[idx], ...req.body };
+  res.json({ success: true, resource: resources[idx] });
+});
+app.delete('/api/resources/:id', (req, res) => {
+  resources = resources.filter(r => r.id !== req.params.id);
+  res.json({ success: true });
+});
+
+// Revision Topics API
+app.get('/api/revision-topics', (req, res) => res.json(revisionTopics));
+app.post('/api/revision-topics', (req, res) => {
+  const newTopic: RevisionTopic = { ...req.body, id: req.body.id || `rev_${Date.now()}` };
+  revisionTopics.unshift(newTopic);
+  res.json({ success: true, topic: newTopic });
+});
+app.put('/api/revision-topics/:id', (req, res) => {
+  const { id } = req.params;
+  const idx = revisionTopics.findIndex(r => r.id === id);
+  if (idx !== -1) revisionTopics[idx] = { ...revisionTopics[idx], ...req.body };
+  res.json({ success: true, topic: revisionTopics[idx] });
+});
+app.delete('/api/revision-topics/:id', (req, res) => {
+  revisionTopics = revisionTopics.filter(r => r.id !== req.params.id);
+  res.json({ success: true });
+});
+
+// Daily Plans API
+app.get('/api/daily-plans', (req, res) => res.json(dailyPlans));
+app.post('/api/daily-plans', (req, res) => {
+  const plan: DailyPlan = req.body;
+  const idx = dailyPlans.findIndex(p => p.date === plan.date);
+  if (idx !== -1) dailyPlans[idx] = plan;
+  else dailyPlans.unshift(plan);
+  res.json({ success: true, plan });
 });
 
 // AI Task Breakdown Helper

@@ -10,7 +10,8 @@ import {
   Resource,
   RevisionTopic,
   Subject,
-  Task
+  Task,
+  TimetableSlot
 } from '../types';
 
 /**
@@ -361,6 +362,220 @@ export const supabaseService = {
   async deleteResource(id: string): Promise<boolean> {
     if (!this.isAvailable()) return false;
     const { error } = await supabase!.from('resources').delete().eq('id', id);
+    return !error;
+  },
+
+  // --- Timetable Slots ---
+  async fetchTimetableSlots(): Promise<TimetableSlot[]> {
+    if (!this.isAvailable()) return [];
+    const { data, error } = await supabase!.from('timetable_slots').select('*').order('created_at', { ascending: true });
+    if (error) {
+      console.error('Error fetching timetable slots from Supabase:', error);
+      return [];
+    }
+    return (data || []).map(row => ({
+      id: row.id,
+      day: row.day,
+      startTime: row.start_time,
+      endTime: row.end_time,
+      subjectId: row.subject_id,
+      subjectCode: row.subject_code,
+      subjectName: row.subject_name,
+      room: row.room || '',
+      professor: row.professor || '',
+      type: row.type || 'lecture',
+      color: row.color || '#3b82f6',
+      notes: row.notes || ''
+    }));
+  },
+
+  async upsertTimetableSlot(slot: TimetableSlot): Promise<boolean> {
+    if (!this.isAvailable()) return false;
+    const { error } = await supabase!.from('timetable_slots').upsert({
+      id: slot.id,
+      day: slot.day,
+      start_time: slot.startTime,
+      end_time: slot.endTime,
+      subject_id: slot.subjectId,
+      subject_code: slot.subjectCode,
+      subject_name: slot.subjectName,
+      room: slot.room,
+      professor: slot.professor,
+      type: slot.type,
+      color: slot.color,
+      notes: slot.notes,
+      updated_at: new Date().toISOString()
+    });
+    if (error) {
+      console.error('Error upserting timetable slot to Supabase:', error);
+      return false;
+    }
+    return true;
+  },
+
+  async deleteTimetableSlot(id: string): Promise<boolean> {
+    if (!this.isAvailable()) return false;
+    const { error } = await supabase!.from('timetable_slots').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting timetable slot from Supabase:', error);
+      return false;
+    }
+    return true;
+  },
+
+  // --- Revision Topics ---
+  async fetchRevisionTopics(): Promise<RevisionTopic[]> {
+    if (!this.isAvailable()) return [];
+    const { data, error } = await supabase!.from('revision_topics').select('*');
+    if (error) return [];
+    return (data || []).map(row => ({
+      id: row.id,
+      title: row.title,
+      subjectId: row.subject_id,
+      examId: row.exam_id,
+      status: row.status || 'not_started',
+      difficulty: row.difficulty,
+      learnedAt: row.learned_at,
+      revision1At: row.revision1_at,
+      revision2At: row.revision2_at,
+      revision3At: row.revision3_at,
+      masteredAt: row.mastered_at,
+      nextRevisionDue: row.next_revision_due,
+      notes: row.notes,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    }));
+  },
+
+  async upsertRevisionTopic(topic: RevisionTopic): Promise<boolean> {
+    if (!this.isAvailable()) return false;
+    const { error } = await supabase!.from('revision_topics').upsert({
+      id: topic.id,
+      title: topic.title,
+      subject_id: topic.subjectId,
+      exam_id: topic.examId,
+      status: topic.status,
+      difficulty: topic.difficulty,
+      learned_at: topic.learnedAt,
+      revision1_at: topic.revision1At,
+      revision2_at: topic.revision2At,
+      revision3_at: topic.revision3At,
+      mastered_at: topic.masteredAt,
+      next_revision_due: topic.nextRevisionDue,
+      notes: topic.notes,
+      updated_at: new Date().toISOString()
+    });
+    return !error;
+  },
+
+  async deleteRevisionTopic(id: string): Promise<boolean> {
+    if (!this.isAvailable()) return false;
+    const { error } = await supabase!.from('revision_topics').delete().eq('id', id);
+    return !error;
+  },
+
+  // --- Announcements ---
+  async fetchAnnouncements(): Promise<ClassAnnouncement[]> {
+    if (!this.isAvailable()) return [];
+    const { data, error } = await supabase!.from('announcements').select('*').order('created_at', { ascending: false });
+    if (error) return [];
+    return (data || []).map(row => ({
+      id: row.id,
+      title: row.title,
+      content: row.content,
+      authorName: row.author_name || 'Class Representative',
+      authorRole: row.author_role || 'CR',
+      subjectId: row.subject_id,
+      isPinned: Boolean(row.is_pinned),
+      priority: row.priority || 'normal',
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
+      isRead: Boolean(row.is_read)
+    }));
+  },
+
+  async upsertAnnouncement(ann: ClassAnnouncement): Promise<boolean> {
+    if (!this.isAvailable()) return false;
+    const { error } = await supabase!.from('announcements').upsert({
+      id: ann.id,
+      title: ann.title,
+      content: ann.content,
+      author_name: ann.authorName,
+      author_role: ann.authorRole,
+      subject_id: ann.subjectId,
+      is_pinned: ann.isPinned,
+      priority: ann.priority,
+      expires_at: ann.expiresAt,
+      is_read: ann.isRead
+    });
+    return !error;
+  },
+
+  async deleteAnnouncement(id: string): Promise<boolean> {
+    if (!this.isAvailable()) return false;
+    const { error } = await supabase!.from('announcements').delete().eq('id', id);
+    return !error;
+  },
+
+  // --- Daily Plans ---
+  async fetchDailyPlans(): Promise<DailyPlan[]> {
+    if (!this.isAvailable()) return [];
+    const { data, error } = await supabase!.from('daily_plans').select('*');
+    if (error) return [];
+    return (data || []).map(row => ({
+      date: row.date,
+      sessions: row.sessions || [],
+      totalStudyMinutes: row.total_study_minutes || 0,
+      isReviewed: Boolean(row.is_reviewed),
+      reviewedAt: row.reviewed_at
+    }));
+  },
+
+  async upsertDailyPlan(plan: DailyPlan): Promise<boolean> {
+    if (!this.isAvailable()) return false;
+    const { error } = await supabase!.from('daily_plans').upsert({
+      date: plan.date,
+      sessions: plan.sessions || [],
+      total_study_minutes: plan.totalStudyMinutes,
+      is_reviewed: plan.isReviewed,
+      reviewed_at: plan.reviewedAt
+    });
+    return !error;
+  },
+
+  // --- Focus Sessions ---
+  async fetchFocusSessions(): Promise<FocusSession[]> {
+    if (!this.isAvailable()) return [];
+    const { data, error } = await supabase!.from('focus_sessions').select('*').order('started_at', { ascending: false });
+    if (error) return [];
+    return (data || []).map(row => ({
+      id: row.id,
+      userId: row.user_id,
+      taskId: row.task_id,
+      taskTitle: row.task_title,
+      subjectId: row.subject_id,
+      durationMinutes: row.duration_minutes,
+      sessionType: row.session_type,
+      completed: Boolean(row.completed),
+      startedAt: row.started_at,
+      completedAt: row.completed_at
+    }));
+  },
+
+  async upsertFocusSession(session: FocusSession): Promise<boolean> {
+    if (!this.isAvailable()) return false;
+    const { error } = await supabase!.from('focus_sessions').upsert({
+      id: session.id,
+      user_id: session.userId || 'usr_student',
+      task_id: session.taskId,
+      task_title: session.taskTitle,
+      subject_id: session.subjectId,
+      duration_minutes: session.durationMinutes,
+      session_type: session.sessionType || 'pomodoro',
+      completed: session.completed,
+      started_at: session.startedAt,
+      completed_at: session.completedAt
+    });
     return !error;
   },
 

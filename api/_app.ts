@@ -243,7 +243,6 @@ app.post('/api/focus-sessions', (req, res) => {
   focusSessions.unshift(session);
   res.json({ success: true, session });
 });
-
 // Timetable API (Shared master timetable across all users)
 app.get('/api/timetable', (req, res) => {
   res.json(timetableSlots);
@@ -251,36 +250,54 @@ app.get('/api/timetable', (req, res) => {
 
 app.post('/api/timetable', (req, res) => {
   const slotData = req.body;
-  // Auto-resolve professor from subject if not provided
   let prof = slotData.professor;
   if (!prof && slotData.subjectId) {
     const sub = subjects.find(s => s.id === slotData.subjectId);
     if (sub) prof = sub.professor || sub.teacherName;
   }
+  const slotId = slotData.id || `tt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
   const newSlot: TimetableSlot = {
     ...slotData,
-    id: slotData.id || `tt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    id: slotId,
     professor: prof || ''
   };
-  timetableSlots.push(newSlot);
-  res.json({ success: true, slot: newSlot });
+
+  const existingIdx = timetableSlots.findIndex(s => s.id === slotId);
+  if (existingIdx !== -1) {
+    timetableSlots[existingIdx] = newSlot;
+  } else {
+    timetableSlots.push(newSlot);
+  }
+
+  res.json({ success: true, slot: newSlot, slots: timetableSlots });
 });
 
 app.put('/api/timetable/:id', (req, res) => {
   const { id } = req.params;
   const index = timetableSlots.findIndex(s => s.id === id);
   if (index === -1) {
-    return res.status(404).json({ error: 'Timetable slot not found' });
+    const slotData = req.body;
+    const newSlot = { ...slotData, id };
+    timetableSlots.push(newSlot);
+    return res.json({ success: true, slot: newSlot, slots: timetableSlots });
   }
   const updatedSlot = { ...timetableSlots[index], ...req.body };
   timetableSlots[index] = updatedSlot;
-  res.json({ success: true, slot: updatedSlot });
+  res.json({ success: true, slot: updatedSlot, slots: timetableSlots });
 });
 
 app.delete('/api/timetable/:id', (req, res) => {
   const { id } = req.params;
   timetableSlots = timetableSlots.filter(s => s.id !== id);
-  res.json({ success: true });
+  res.json({ success: true, slots: timetableSlots });
+});
+
+// Bulk timetable update
+app.put('/api/timetable', (req, res) => {
+  if (Array.isArray(req.body)) {
+    timetableSlots = req.body;
+  }
+  res.json({ success: true, slots: timetableSlots });
 });
 
 // Exams API

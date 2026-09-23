@@ -297,80 +297,86 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => { storage.set(StorageKeys.PREFERENCES, preferences); }, [preferences]);
   useEffect(() => { storage.set(StorageKeys.STUDY_PREFS, studyPreferences); }, [studyPreferences]);
 
-  // Initial Supabase fetch, seed & realtime channel subscription (or central API fallback)
+  // Initial Supabase fetch, seed & realtime channel subscription (with continuous API fallback polling)
   useEffect(() => {
-    if (!supabaseService.isAvailable()) {
-      let isMounted = true;
-      const fetchCentralData = async () => {
-        try {
-          const resTasks = await fetch('/api/tasks');
-          if (resTasks.ok) {
-            const apiTasks = await resTasks.json();
-            if (Array.isArray(apiTasks) && apiTasks.length > 0 && isMounted) setTasks(apiTasks);
-          }
-        } catch {}
-        try {
-          const resSubjects = await fetch('/api/subjects');
-          if (resSubjects.ok) {
-            const apiSubjects = await resSubjects.json();
-            if (Array.isArray(apiSubjects) && apiSubjects.length > 0 && isMounted) setSubjects(apiSubjects);
-          }
-        } catch {}
-        try {
-          const resTimetable = await fetch('/api/timetable');
-          if (resTimetable.ok) {
-            const apiTimetable = await resTimetable.json();
-            if (Array.isArray(apiTimetable) && apiTimetable.length > 0 && isMounted) setTimetableSlots(apiTimetable);
-          }
-        } catch {}
-        try {
-          const resExams = await fetch('/api/exams');
-          if (resExams.ok) {
-            const apiExams = await resExams.json();
-            if (Array.isArray(apiExams) && apiExams.length > 0 && isMounted) setExams(apiExams);
-          }
-        } catch {}
-        try {
-          const resGoals = await fetch('/api/goals');
-          if (resGoals.ok) {
-            const apiGoals = await resGoals.json();
-            if (Array.isArray(apiGoals) && apiGoals.length > 0 && isMounted) setGoals(apiGoals);
-          }
-        } catch {}
-        try {
-          const resNotes = await fetch('/api/notes');
-          if (resNotes.ok) {
-            const apiNotes = await resNotes.json();
-            if (Array.isArray(apiNotes) && apiNotes.length > 0 && isMounted) setNotes(apiNotes);
-          }
-        } catch {}
-        try {
-          const resResources = await fetch('/api/resources');
-          if (resResources.ok) {
-            const apiResources = await resResources.json();
-            if (Array.isArray(apiResources) && apiResources.length > 0 && isMounted) setResources(apiResources);
-          }
-        } catch {}
-        try {
-          const resRevision = await fetch('/api/revision-topics');
-          if (resRevision.ok) {
-            const apiRev = await resRevision.json();
-            if (Array.isArray(apiRev) && apiRev.length > 0 && isMounted) setRevisionTopics(apiRev);
-          }
-        } catch {}
-        try {
-          const resDaily = await fetch('/api/daily-plans');
-          if (resDaily.ok) {
-            const apiDaily = await resDaily.json();
-            if (Array.isArray(apiDaily) && apiDaily.length > 0 && isMounted) setDailyPlans(apiDaily);
-          }
-        } catch {}
-      };
-      fetchCentralData();
-      return () => { isMounted = false; };
-    }
-
     let isMounted = true;
+
+    const fetchCentralData = async () => {
+      try {
+        const resTasks = await fetch('/api/tasks');
+        if (resTasks.ok) {
+          const apiTasks = await resTasks.json();
+          if (Array.isArray(apiTasks) && isMounted) setTasks(apiTasks);
+        }
+      } catch {}
+      try {
+        const resSubjects = await fetch('/api/subjects');
+        if (resSubjects.ok) {
+          const apiSubjects = await resSubjects.json();
+          if (Array.isArray(apiSubjects) && apiSubjects.length > 0 && isMounted) setSubjects(apiSubjects);
+        }
+      } catch {}
+      try {
+        const resTimetable = await fetch('/api/timetable');
+        if (resTimetable.ok) {
+          const apiTimetable = await resTimetable.json();
+          if (Array.isArray(apiTimetable) && isMounted) setTimetableSlots(apiTimetable);
+        }
+      } catch {}
+      try {
+        const resExams = await fetch('/api/exams');
+        if (resExams.ok) {
+          const apiExams = await resExams.json();
+          if (Array.isArray(apiExams) && isMounted) setExams(apiExams);
+        }
+      } catch {}
+      try {
+        const resGoals = await fetch('/api/goals');
+        if (resGoals.ok) {
+          const apiGoals = await resGoals.json();
+          if (Array.isArray(apiGoals) && isMounted) setGoals(apiGoals);
+        }
+      } catch {}
+      try {
+        const resNotes = await fetch('/api/notes');
+        if (resNotes.ok) {
+          const apiNotes = await resNotes.json();
+          if (Array.isArray(apiNotes) && isMounted) setNotes(apiNotes);
+        }
+      } catch {}
+      try {
+        const resResources = await fetch('/api/resources');
+        if (resResources.ok) {
+          const apiResources = await resResources.json();
+          if (Array.isArray(apiResources) && isMounted) setResources(apiResources);
+        }
+      } catch {}
+      try {
+        const resRevision = await fetch('/api/revision-topics');
+        if (resRevision.ok) {
+          const apiRev = await resRevision.json();
+          if (Array.isArray(apiRev) && isMounted) setRevisionTopics(apiRev);
+        }
+      } catch {}
+      try {
+        const resDaily = await fetch('/api/daily-plans');
+        if (resDaily.ok) {
+          const apiDaily = await resDaily.json();
+          if (Array.isArray(apiDaily) && isMounted) setDailyPlans(apiDaily);
+        }
+      } catch {}
+    };
+
+    if (!supabaseService.isAvailable()) {
+      fetchCentralData();
+      const pollInterval = setInterval(() => {
+        if (isMounted) fetchCentralData();
+      }, 3000);
+      return () => {
+        isMounted = false;
+        clearInterval(pollInterval);
+      };
+    }
 
     const syncCloudData = async () => {
       try {
@@ -400,35 +406,35 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Fetch Exams
         const cloudExams = await supabaseService.fetchExams();
-        if (cloudExams.length > 0 && isMounted) setExams(cloudExams);
+        if (isMounted) setExams(cloudExams);
 
         // Fetch Goals
         const cloudGoals = await supabaseService.fetchGoals();
-        if (cloudGoals.length > 0 && isMounted) setGoals(cloudGoals);
+        if (isMounted) setGoals(cloudGoals);
 
         // Fetch Notes
         const cloudNotes = await supabaseService.fetchNotes();
-        if (cloudNotes.length > 0 && isMounted) setNotes(cloudNotes);
+        if (isMounted) setNotes(cloudNotes);
 
         // Fetch Resources
         const cloudResources = await supabaseService.fetchResources();
-        if (cloudResources.length > 0 && isMounted) setResources(cloudResources);
+        if (isMounted) setResources(cloudResources);
 
         // Fetch Revision Topics
         const cloudRevision = await supabaseService.fetchRevisionTopics();
-        if (cloudRevision.length > 0 && isMounted) setRevisionTopics(cloudRevision);
+        if (isMounted) setRevisionTopics(cloudRevision);
 
         // Fetch Announcements
         const cloudAnnouncements = await supabaseService.fetchAnnouncements();
-        if (cloudAnnouncements.length > 0 && isMounted) setAnnouncements(cloudAnnouncements);
+        if (isMounted) setAnnouncements(cloudAnnouncements);
 
         // Fetch Daily Plans
         const cloudDailyPlans = await supabaseService.fetchDailyPlans();
-        if (cloudDailyPlans.length > 0 && isMounted) setDailyPlans(cloudDailyPlans);
+        if (isMounted) setDailyPlans(cloudDailyPlans);
 
         // Fetch Focus Sessions
         const cloudFocus = await supabaseService.fetchFocusSessions();
-        if (cloudFocus.length > 0 && isMounted) setFocusSessions(cloudFocus);
+        if (isMounted) setFocusSessions(cloudFocus);
 
         if (isMounted) setIsSupabaseConnected(true);
       } catch (err) {
@@ -438,64 +444,70 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     syncCloudData();
 
+    // Secondary fallback polling every 4s to ensure fast sync even across different networks/browsers
+    const fallbackPoll = setInterval(() => {
+      if (isMounted) fetchCentralData();
+    }, 4000);
+
     // Subscribe to realtime postgres updates across all 11 tables
     const unsubTasks = supabaseService.subscribeToChanges('tasks', async () => {
       const updated = await supabaseService.fetchTasks();
-      if (isMounted && updated.length > 0) setTasks(updated);
+      if (isMounted) setTasks(updated);
     });
 
     const unsubSubjects = supabaseService.subscribeToChanges('subjects', async () => {
       const updated = await supabaseService.fetchSubjects();
-      if (isMounted && updated.length > 0) setSubjects(updated);
+      if (isMounted) setSubjects(updated);
     });
 
     const unsubTimetable = supabaseService.subscribeToChanges('timetable_slots', async () => {
       const updated = await supabaseService.fetchTimetableSlots();
-      if (isMounted && updated.length > 0) setTimetableSlots(updated);
+      if (isMounted) setTimetableSlots(updated);
     });
 
     const unsubExams = supabaseService.subscribeToChanges('exams', async () => {
       const updated = await supabaseService.fetchExams();
-      if (isMounted && updated.length > 0) setExams(updated);
+      if (isMounted) setExams(updated);
     });
 
     const unsubGoals = supabaseService.subscribeToChanges('goals', async () => {
       const updated = await supabaseService.fetchGoals();
-      if (isMounted && updated.length > 0) setGoals(updated);
+      if (isMounted) setGoals(updated);
     });
 
     const unsubNotes = supabaseService.subscribeToChanges('notes', async () => {
       const updated = await supabaseService.fetchNotes();
-      if (isMounted && updated.length > 0) setNotes(updated);
+      if (isMounted) setNotes(updated);
     });
 
     const unsubResources = supabaseService.subscribeToChanges('resources', async () => {
       const updated = await supabaseService.fetchResources();
-      if (isMounted && updated.length > 0) setResources(updated);
+      if (isMounted) setResources(updated);
     });
 
     const unsubRevision = supabaseService.subscribeToChanges('revision_topics', async () => {
       const updated = await supabaseService.fetchRevisionTopics();
-      if (isMounted && updated.length > 0) setRevisionTopics(updated);
+      if (isMounted) setRevisionTopics(updated);
     });
 
     const unsubAnnouncements = supabaseService.subscribeToChanges('announcements', async () => {
       const updated = await supabaseService.fetchAnnouncements();
-      if (isMounted && updated.length > 0) setAnnouncements(updated);
+      if (isMounted) setAnnouncements(updated);
     });
 
     const unsubDailyPlans = supabaseService.subscribeToChanges('daily_plans', async () => {
       const updated = await supabaseService.fetchDailyPlans();
-      if (isMounted && updated.length > 0) setDailyPlans(updated);
+      if (isMounted) setDailyPlans(updated);
     });
 
     const unsubFocus = supabaseService.subscribeToChanges('focus_sessions', async () => {
       const updated = await supabaseService.fetchFocusSessions();
-      if (isMounted && updated.length > 0) setFocusSessions(updated);
+      if (isMounted) setFocusSessions(updated);
     });
 
     return () => {
       isMounted = false;
+      clearInterval(fallbackPoll);
       unsubTasks();
       unsubSubjects();
       unsubTimetable();

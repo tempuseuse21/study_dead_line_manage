@@ -164,13 +164,13 @@ export const AdminPortalModal: React.FC = () => {
   return (
     <div
       id="admin-portal-modal-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
       onClick={() => setIsUnlockAdminModalOpen(false)}
     >
       <div
         id="admin-portal-modal-content"
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-4xl rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
+        className="w-full max-w-4xl rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] my-auto animate-in zoom-in-95 duration-200"
       >
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-5 sm:p-6 bg-[var(--bg-card-subtle)]">
@@ -207,7 +207,7 @@ export const AdminPortalModal: React.FC = () => {
 
         {/* Not Authenticated / Login Form View */}
         {!isAdmin ? (
-          <div className="p-6 sm:p-8 space-y-6">
+          <div className="p-5 sm:p-8 space-y-6 overflow-y-auto">
             <div className="rounded-2xl bg-indigo-500/10 border border-indigo-500/20 p-4 text-xs text-indigo-700 dark:text-indigo-300 flex items-start gap-3">
               <KeyRound className="h-5 w-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
               <div>

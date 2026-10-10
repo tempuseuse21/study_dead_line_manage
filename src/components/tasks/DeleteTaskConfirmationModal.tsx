@@ -79,12 +79,12 @@ export const DeleteTaskConfirmationModal: React.FC<DeleteTaskConfirmationModalPr
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink/70 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-ink/70 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div
         id="delete-task-passcode-modal"
-        className="w-full max-w-md rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink shadow-2xl p-6 overflow-hidden animate-in zoom-in-95 duration-150 relative"
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto my-auto rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink shadow-2xl p-5 sm:p-6 animate-in zoom-in-95 duration-150 relative"
         onClick={e => e.stopPropagation()}
       >
         {/* Close Button */}

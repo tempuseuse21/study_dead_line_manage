@@ -126,8 +126,8 @@ export const TaskFormModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-150 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-5 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-150 my-auto">
         {/* Header Tabs */}
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4 mb-6">
           <div className="flex items-center gap-2">

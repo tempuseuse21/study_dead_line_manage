@@ -89,7 +89,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ forceFullPage = false }) =
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-lg animate-in fade-in duration-200 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-lg overflow-y-auto animate-in fade-in duration-200 ${
         isMandatory ? 'min-h-screen' : ''
       }`}
       onClick={() => {
@@ -97,7 +97,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ forceFullPage = false }) =
       }}
     >
       <div
-        className="relative w-full max-w-md rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-md my-auto max-h-[90vh] rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5 sm:p-8 shadow-2xl overflow-y-auto animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         {/* Close Button (only if not mandatory login) */}

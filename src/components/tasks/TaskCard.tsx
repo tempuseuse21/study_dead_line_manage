@@ -12,7 +12,8 @@ import {
   Database,
   Binary,
   Code,
-  GitFork
+  GitFork,
+  User
 } from 'lucide-react';
 import { formatLiveCountdown, getPriorityBadge, formatDateDisplay } from '../../lib/utils';
 import { Task } from '../../types';
@@ -134,32 +135,42 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, compact = false }) => 
 
 
       {/* Card Footer */}
-      <div className="mt-auto flex items-center justify-between gap-2 pt-3 border-t border-[var(--border-subtle)] text-xs">
-        <div
-          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[0.65rem] font-mono font-bold border transition-colors ${countdown.badgeClass}`}
-        >
-          <Clock className="w-3 h-3" />
-          <span>{countdown.text}</span>
+      <div className="mt-auto flex flex-col gap-2 pt-3 border-t border-[var(--border-subtle)] text-xs">
+        <div className="flex items-center justify-between gap-2">
+          <div
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[0.65rem] font-mono font-bold border transition-colors ${countdown.badgeClass}`}
+          >
+            <Clock className="w-3 h-3" />
+            <span>{countdown.text}</span>
+          </div>
+
+          <div className="flex items-center gap-3 text-[var(--text-muted)]">
+            {task.attachments?.length > 0 && (
+              <span className="flex items-center gap-1 text-xs" title="Attachments">
+                <Paperclip className="w-3.5 h-3.5" />
+                <span className="font-mono text-[0.65rem]">{task.attachments.length}</span>
+              </span>
+            )}
+
+            {task.comments?.length > 0 && (
+              <span className="flex items-center gap-1 text-xs" title="Comments">
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span className="font-mono text-[0.65rem]">{task.comments.length}</span>
+              </span>
+            )}
+
+            <span className="hidden sm:inline-flex items-center gap-1 text-[0.7rem] font-medium">
+              <Calendar className="w-3 h-3 text-[var(--text-faint)]" />
+              {formatDateDisplay(task.dueDate, task.dueTime)}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 text-[var(--text-muted)]">
-          {task.attachments?.length > 0 && (
-            <span className="flex items-center gap-1 text-xs" title="Attachments">
-              <Paperclip className="w-3.5 h-3.5" />
-              <span className="font-mono text-[0.65rem]">{task.attachments.length}</span>
-            </span>
-          )}
-
-          {task.comments?.length > 0 && (
-            <span className="flex items-center gap-1 text-xs" title="Comments">
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span className="font-mono text-[0.65rem]">{task.comments.length}</span>
-            </span>
-          )}
-
-          <span className="hidden sm:inline-flex items-center gap-1 text-[0.7rem] font-medium">
-            <Calendar className="w-3 h-3 text-[var(--text-faint)]" />
-            {formatDateDisplay(task.dueDate, task.dueTime)}
+        {/* Uploader Meta Info */}
+        <div className="flex items-center justify-between text-[0.65rem] text-[var(--text-muted)] pt-1 border-t border-[var(--border-subtle)]/50">
+          <span className="truncate flex items-center gap-1 text-[var(--text-muted)]">
+            <User className="w-3 h-3 text-indigo-500 flex-shrink-0" />
+            <span>Uploaded by: <strong className="text-[var(--text-main)]">{task.createdByName || 'Student'}</strong> {task.createdById ? `(${task.createdById})` : ''}</span>
           </span>
         </div>
       </div>

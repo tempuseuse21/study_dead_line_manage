@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useTasks } from '../../context/TaskContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Sparkles,
   Plus,
@@ -10,7 +11,10 @@ import {
   Database,
   Search,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  LogOut,
+  User,
+  LogIn
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -20,6 +24,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout, setShowAuthModal, setAuthMode } = useAuth();
   const {
     setIsCreateTaskModalOpen,
     notifications,
@@ -45,20 +50,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
         <div>
           <div className="flex items-center gap-1.5 sm:gap-2">
             <h1 className="font-display font-bold text-base sm:text-xl tracking-tight text-[var(--text-main)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-              Study<span className="gradient-text">Sync</span>
+              MSc IT <span className="gradient-text">Deadline Portal</span>
             </h1>
             <span className="text-[0.6rem] sm:text-[0.65rem] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-              Academic OS
+              Batch 2026
             </span>
             <span
-              title="Real-Time Portal Data Sync Active — All changes by any user reflect live across all connected sessions"
-              className="hidden md:inline-flex items-center gap-1 text-[0.65rem] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Portal Live Synced</span>
-            </span>
-            <span
-              title={isSupabaseConnected ? 'Connected to Supabase Cloud DB — Real-Time Multi-Device Sync Active' : 'Running in Local Storage Mode — Add VITE_SUPABASE_URL to connect Supabase Cloud DB'}
+              title={isSupabaseConnected ? 'Connected to Supabase Shared DB' : 'Local Storage Mode'}
               className={`hidden sm:inline-flex items-center gap-1 text-[0.65rem] font-mono font-semibold px-2 py-0.5 rounded-full border ${
                 isSupabaseConnected
                   ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
@@ -66,28 +64,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
               }`}
             >
               <Database className="w-3 h-3" />
-              {isSupabaseConnected ? 'Supabase Synced' : 'Local DB'}
+              {isSupabaseConnected ? 'Supabase Live' : 'Local DB'}
             </span>
           </div>
-          <p className="text-xs text-[var(--text-muted)] hidden sm:block">
-            Smart Deadline & Study Productivity Manager
+          <p className="text-xs text-[var(--text-muted)] hidden sm:block font-medium">
+            Dhirubhai Ambani University • MSc IT Batch (125 Students)
           </p>
         </div>
       </div>
 
-      {/* Global Actions & Controls */}
+      {/* Global Actions & Student Profile Controls */}
       <div className="flex items-center gap-1.5 sm:gap-3">
         {/* Global Search Button */}
         <button
           onClick={() => setIsSearchModalOpen(true)}
           className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all cursor-pointer text-xs font-medium"
-          title="Search Tasks, Subjects, Notices (Ctrl+K)"
+          title="Search Tasks (Ctrl+K)"
         >
           <Search className="w-4 h-4" />
           <span className="hidden md:inline">Search...</span>
-          <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[0.6rem] font-mono font-bold rounded bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-faint)]">
-            Ctrl K
-          </kbd>
         </button>
 
         {/* Admin / CR Portal Button */}
@@ -98,16 +93,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
               ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25'
               : 'bg-[var(--bg-card-subtle)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-indigo-500/10'
           }`}
-          title={isAdmin ? 'CR Admin Mode Active — Click to manage portal' : 'Unlock CR Admin Moderation Privileges'}
+          title={isAdmin ? 'CR Admin Mode Active' : 'CR Admin Portal'}
         >
           {isAdmin ? <ShieldCheck className="w-4 h-4 text-emerald-500" /> : <ShieldAlert className="w-4 h-4 text-indigo-500" />}
-          <span className="hidden lg:inline">{isAdmin ? 'CR Admin' : 'Admin Portal'}</span>
+          <span className="hidden lg:inline">{isAdmin ? 'CR Admin' : 'Admin'}</span>
         </button>
 
         {/* Notifications Bell */}
         <button
           onClick={() => setIsNotificationDrawerOpen(true)}
-          className="relative p-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all cursor-pointer"
+          className="relative p-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-indigo-500/10 transition-all cursor-pointer"
           title="Notifications"
         >
           <Bell className="w-4 h-4" />
@@ -121,8 +116,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
         {/* Theme Switcher Button */}
         <button
           onClick={toggleTheme}
-          className="p-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all cursor-pointer"
-          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          className="p-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-indigo-500/10 transition-all cursor-pointer"
+          title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
         >
           {theme === 'dark' ? (
             <Sun className="w-4 h-4 text-amber-400" />
@@ -131,13 +126,41 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
           )}
         </button>
 
+        {/* Logged In Student Profile Badge / Auth Buttons */}
+        {user ? (
+          <div className="flex items-center gap-2 pl-2 border-l border-[var(--border-subtle)]">
+            <div className="hidden sm:flex flex-col text-right">
+              <span className="text-xs font-bold text-[var(--text-main)] leading-none">{user.fullName.split(' ')[0]}</span>
+              <span className="text-[0.65rem] font-mono font-bold text-indigo-600 dark:text-indigo-400">{user.studentId}</span>
+            </div>
+            <button
+              onClick={logout}
+              className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
+              title="Logout Student Session"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => {
+              setAuthMode('login');
+              setShowAuthModal(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-xs hover:bg-indigo-700 transition-all cursor-pointer"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Log In</span>
+          </button>
+        )}
+
         {/* Add Task Primary Action Button */}
         <button
           onClick={() => setIsCreateTaskModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-brand-bg text-white font-semibold text-xs sm:text-sm shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl gradient-brand-bg text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-500/25 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span className="hidden sm:inline">New Task</span>
+          <span className="hidden sm:inline">Add Task</span>
         </button>
       </div>
     </header>

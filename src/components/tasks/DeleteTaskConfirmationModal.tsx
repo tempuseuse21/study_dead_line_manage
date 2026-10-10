@@ -20,12 +20,15 @@ interface DeleteTaskConfirmationModalProps {
   onSuccess?: () => void;
 }
 
+import { useAuth } from '../../context/AuthContext';
+
 export const DeleteTaskConfirmationModal: React.FC<DeleteTaskConfirmationModalProps> = ({
   isOpen,
   task,
   onClose,
   onSuccess
 }) => {
+  const { user } = useAuth();
   const { deleteTask, subjects } = useTasks();
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
@@ -43,12 +46,20 @@ export const DeleteTaskConfirmationModal: React.FC<DeleteTaskConfirmationModalPr
 
   if (!isOpen || !task) return null;
 
+  const isUploader = Boolean(
+    task && user && (
+      task.createdById === user.studentId ||
+      task.createdById === user.id ||
+      task.createdByName === user.fullName
+    )
+  );
+
   const subject = subjects.find(s => s.id === task.subjectId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!passcode.trim()) {
-      setError('Please enter the authorization passcode.');
+    if (!isUploader && !passcode.trim()) {
+      setError('Please enter the CR authorization passcode (iamcr).');
       return;
     }
 
@@ -91,10 +102,12 @@ export const DeleteTaskConfirmationModal: React.FC<DeleteTaskConfirmationModalPr
           </div>
           <div>
             <h3 className="text-base font-bold text-ink dark:text-white">
-              Authorize Task Deletion
+              {isUploader ? 'Delete Your Uploaded Assignment' : 'Authorize Task Deletion'}
             </h3>
             <p className="text-xs text-ink-muted dark:text-ink-muted">
-              Security authorization required to delete this task
+              {isUploader
+                ? `You uploaded this task as ${user?.fullName || 'Student'}. Confirm to permanently remove it.`
+                : `Only creator (${task.createdByName || 'Uploader'}) or CR Admin can delete this task.`}
             </p>
           </div>
         </div>
@@ -122,49 +135,54 @@ export const DeleteTaskConfirmationModal: React.FC<DeleteTaskConfirmationModalPr
           <h4 className="text-sm font-bold text-ink dark:text-white truncate">
             {task.title}
           </h4>
+          <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-mono">
+            Uploaded by: {task.createdByName || 'Student'} ({task.createdById || '202612045'})
+          </p>
         </div>
 
-        {/* Passcode Form */}
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted mb-1.5 flex items-center gap-1.5">
-              <Lock className="h-3.5 w-3.5 text-ink-muted" />
-              <span>Enter Security Passcode</span>
-            </label>
-            <div className="relative">
-              <input
-                id="task-delete-passcode-input"
-                type={showPasscode ? 'text' : 'password'}
-                value={passcode}
-                onChange={e => {
-                  setPasscode(e.target.value);
-                  if (error) setError('');
-                }}
-                autoFocus
-                placeholder="Enter passcode"
-                className={`w-full rounded-none border-[1.5px] bg-bg dark:bg-ink px-3.5 py-2.5 pr-10 text-sm font-medium text-ink dark:text-white focus:outline-hidden transition-all ${
-                  error
-                    ? 'border-rose-500 ring-2 ring-rose-500/20'
-                    : 'border-ink-faint dark:border-ink-faint focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPasscode(!showPasscode)}
-                className="absolute right-2.5 top-1/2 -tranink-y-1/2 p-1 text-ink-muted hover:text-ink-muted dark:hover:text-bg"
-                tabIndex={-1}
-              >
-                {showPasscode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-
-            {error && (
-              <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 animate-in fade-in duration-150">
-                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                <span>{error}</span>
+          {!isUploader && (
+            <div>
+              <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted mb-1.5 flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5 text-ink-muted" />
+                <span>Enter CR Admin Passcode (iamcr)</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="task-delete-passcode-input"
+                  type={showPasscode ? 'text' : 'password'}
+                  value={passcode}
+                  onChange={e => {
+                    setPasscode(e.target.value);
+                    if (error) setError('');
+                  }}
+                  autoFocus
+                  placeholder="Enter passcode"
+                  className={`w-full rounded-none border-[1.5px] bg-bg dark:bg-ink px-3.5 py-2.5 pr-10 text-sm font-medium text-ink dark:text-white focus:outline-hidden transition-all ${
+                    error
+                      ? 'border-rose-500 ring-2 ring-rose-500/20'
+                      : 'border-ink-faint dark:border-ink-faint focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasscode(!showPasscode)}
+                  className="absolute right-2.5 top-1/2 -tranink-y-1/2 p-1 text-ink-muted hover:text-ink-muted dark:hover:text-bg"
+                  tabIndex={-1}
+                >
+                  {showPasscode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 animate-in fade-in duration-150">
+              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-2.5 pt-2 border-t-[1.5px] border-ink-faint dark:border-ink-faint">

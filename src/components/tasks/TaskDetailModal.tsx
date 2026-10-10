@@ -16,26 +16,41 @@ import {
   Database,
   Binary,
   Code,
-  GitFork
+  GitFork,
+  User,
+  Lock
 } from 'lucide-react';
 import { formatLiveCountdown, getPriorityBadge, formatDateDisplay } from '../../lib/utils';
 import { Priority } from '../../types';
 import { useTasks } from '../../context/TaskContext';
+import { useAuth } from '../../context/AuthContext';
 import { DeleteTaskConfirmationModal } from './DeleteTaskConfirmationModal';
 
 export const TaskDetailModal: React.FC = () => {
+  const { user } = useAuth();
   const {
     selectedTask,
     setSelectedTask,
     updateTask,
     addComment,
-    subjects
+    subjects,
+    isAdmin
   } = useTasks();
 
   const [commentInput, setCommentInput] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   if (!selectedTask) return null;
+
+  // Check if current user uploaded this task or is CR Admin
+  const canModifyTask = Boolean(
+    isAdmin ||
+    !selectedTask.createdById ||
+    selectedTask.createdById === 'student' ||
+    selectedTask.createdById === user?.studentId ||
+    selectedTask.createdById === user?.id ||
+    selectedTask.createdByName === user?.fullName
+  );
 
   const subject = subjects.find(s => s.id === selectedTask.subjectId);
   const countdown = formatLiveCountdown(
@@ -79,8 +94,8 @@ export const TaskDetailModal: React.FC = () => {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-card-subtle)]">
-          <div className="flex items-center gap-3">
+        <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-card-subtle)]">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-mono font-bold border ${countdown.badgeClass}`}>
               <Clock className="w-3.5 h-3.5" />
               <span>{countdown.text}</span>
@@ -101,17 +116,23 @@ export const TaskDetailModal: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
-              title="Delete Task"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {canModifyTask ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                title="Delete Task"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            ) : (
+              <span className="p-1.5 rounded-xl text-[var(--text-faint)] bg-[var(--bg-card)] cursor-not-allowed" title="Only creator can delete this task">
+                <Lock className="w-4 h-4 text-amber-500" />
+              </span>
+            )}
             <button
               id="close-task-modal-btn"
               onClick={() => setSelectedTask(null)}
-              className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors"
+              className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -120,6 +141,23 @@ export const TaskDetailModal: React.FC = () => {
 
         {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Uploader Meta & Permission Banner */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs">
+            <div className="flex items-center gap-2 text-[var(--text-muted)] font-medium">
+              <User className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+              <span>
+                Uploaded by: <strong className="text-[var(--text-main)]">{selectedTask.createdByName || 'Student'}</strong> {selectedTask.createdById ? `(${selectedTask.createdById})` : ''}
+              </span>
+            </div>
+
+            {!canModifyTask && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold text-[0.7rem]">
+                <Lock className="w-3 h-3" />
+                Read-Only (Uploaded by {selectedTask.createdByName || 'another user'})
+              </span>
+            )}
+          </div>
+
           <div className="flex items-start gap-3">
             <div
               className="mt-1 w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl text-white shadow-xs"
@@ -130,17 +168,23 @@ export const TaskDetailModal: React.FC = () => {
             <div className="flex-1">
               <input
                 type="text"
+                readOnly={!canModifyTask}
                 value={selectedTask.title}
-                onChange={e => updateTask(selectedTask.id, { title: e.target.value })}
-                className="w-full text-lg sm:text-xl font-display font-bold text-[var(--text-main)] bg-transparent border-b border-transparent hover:border-[var(--border-subtle)] focus:border-indigo-500 focus:outline-none py-0.5"
+                onChange={e => canModifyTask && updateTask(selectedTask.id, { title: e.target.value })}
+                className={`w-full text-lg sm:text-xl font-display font-bold text-[var(--text-main)] bg-transparent border-b border-transparent py-0.5 ${
+                  canModifyTask ? 'hover:border-[var(--border-subtle)] focus:border-indigo-500 focus:outline-none' : 'cursor-not-allowed'
+                }`}
                 placeholder="Task title"
               />
               <textarea
+                readOnly={!canModifyTask}
                 value={selectedTask.description || ''}
-                onChange={e => updateTask(selectedTask.id, { description: e.target.value })}
+                onChange={e => canModifyTask && updateTask(selectedTask.id, { description: e.target.value })}
                 rows={2}
-                className="mt-2 w-full text-xs sm:text-sm text-[var(--text-muted)] bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] rounded-xl p-3 focus:outline-none resize-none leading-relaxed"
-                placeholder="Add assignment instructions, notes, or criteria..."
+                className={`mt-2 w-full text-xs sm:text-sm text-[var(--text-muted)] bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] rounded-xl p-3 resize-none leading-relaxed ${
+                  canModifyTask ? 'focus:outline-none' : 'cursor-not-allowed'
+                }`}
+                placeholder="Assignment instructions or notes..."
               />
             </div>
           </div>
@@ -153,9 +197,10 @@ export const TaskDetailModal: React.FC = () => {
               </span>
               <input
                 type="date"
+                disabled={!canModifyTask}
                 value={selectedTask.dueDate}
-                onChange={e => updateTask(selectedTask.id, { dueDate: e.target.value })}
-                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] font-mono focus:outline-none"
+                onChange={e => canModifyTask && updateTask(selectedTask.id, { dueDate: e.target.value })}
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] font-mono focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -165,9 +210,10 @@ export const TaskDetailModal: React.FC = () => {
               </span>
               <input
                 type="time"
+                disabled={!canModifyTask}
                 value={selectedTask.dueTime || '23:59'}
-                onChange={e => updateTask(selectedTask.id, { dueTime: e.target.value })}
-                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] font-mono focus:outline-none"
+                onChange={e => canModifyTask && updateTask(selectedTask.id, { dueTime: e.target.value })}
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] font-mono focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -176,9 +222,10 @@ export const TaskDetailModal: React.FC = () => {
                 Subject
               </span>
               <select
+                disabled={!canModifyTask}
                 value={selectedTask.subjectId}
-                onChange={e => updateTask(selectedTask.id, { subjectId: e.target.value })}
-                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] focus:outline-none"
+                onChange={e => canModifyTask && updateTask(selectedTask.id, { subjectId: e.target.value })}
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {subjects.map(s => (
                   <option key={s.id} value={s.id}>
@@ -193,9 +240,10 @@ export const TaskDetailModal: React.FC = () => {
                 Priority
               </span>
               <select
+                disabled={!canModifyTask}
                 value={selectedTask.priority}
-                onChange={e => updateTask(selectedTask.id, { priority: e.target.value as Priority })}
-                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] capitalize focus:outline-none"
+                onChange={e => canModifyTask && updateTask(selectedTask.id, { priority: e.target.value as Priority })}
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] capitalize focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>

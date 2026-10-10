@@ -127,59 +127,7 @@ export const INITIAL_ACTIVITY: ActivityLog[] = [];
 // ============================================================
 
 export function getInitialExams(): Exam[] {
-  const today = new Date();
-
-  const exam1Date = new Date(today);
-  exam1Date.setDate(today.getDate() + 14);
-
-  const exam2Date = new Date(today);
-  exam2Date.setDate(today.getDate() + 21);
-
-  return [
-    {
-      id: 'exam_dbms_01',
-      subjectId: 'sub_it615',
-      title: 'DBMS Mid-Semester Exam',
-      examDate: exam1Date.toISOString().split('T')[0],
-      examTime: '10:00',
-      venue: 'Hall A, Block 2',
-      difficulty: 'hard',
-      preparationPercent: 35,
-      targetScore: 80,
-      topics: [
-        { id: 't1', title: 'ER Diagrams & Relational Model', isLearned: true },
-        { id: 't2', title: 'SQL DDL & DML', isLearned: true },
-        { id: 't3', title: 'Normalization (1NF–BCNF)', isLearned: false },
-        { id: 't4', title: 'Indexing & B+ Trees', isLearned: false },
-        { id: 't5', title: 'Transactions & ACID', isLearned: false }
-      ],
-      notes: 'Focus on normalization and transactions. Review past papers.',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'exam_dsa_01',
-      subjectId: 'sub_it639',
-      title: 'DSA End-Semester Exam',
-      examDate: exam2Date.toISOString().split('T')[0],
-      examTime: '14:00',
-      venue: 'Computer Lab 3',
-      difficulty: 'very_hard',
-      preparationPercent: 20,
-      targetScore: 75,
-      topics: [
-        { id: 't1', title: 'Arrays, Strings, Recursion', isLearned: true },
-        { id: 't2', title: 'Linked Lists, Stacks, Queues', isLearned: false },
-        { id: 't3', title: 'Trees (BST, AVL, Heap)', isLearned: false },
-        { id: 't4', title: 'Graph Algorithms (BFS/DFS)', isLearned: false },
-        { id: 't5', title: 'Dynamic Programming', isLearned: false },
-        { id: 't6', title: 'Sorting & Searching', isLearned: false }
-      ],
-      notes: 'Practice coding problems daily. Focus on DP patterns.',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ];
+  return [];
 }
 
 // ============================================================
@@ -187,39 +135,7 @@ export function getInitialExams(): Exam[] {
 // ============================================================
 
 export function getInitialGoals(): Goal[] {
-  const nextWeek = new Date();
-  nextWeek.setDate(nextWeek.getDate() + 7);
-
-  const nextMonth = new Date();
-  nextMonth.setDate(nextMonth.getDate() + 30);
-
-  return [
-    {
-      id: 'goal_study_01',
-      title: 'Study 20 hours this week',
-      description: 'Maintain consistent study schedule across all subjects',
-      targetValue: 20,
-      currentValue: 0,
-      unit: 'hours',
-      deadline: nextWeek.toISOString().split('T')[0],
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'goal_dbms_01',
-      title: 'Complete DBMS syllabus',
-      description: 'Cover all DBMS topics before the exam',
-      subjectId: 'sub_it615',
-      targetValue: 100,
-      currentValue: 35,
-      unit: '%',
-      deadline: nextMonth.toISOString().split('T')[0],
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ];
+  return [];
 }
 
 // ============================================================

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { TaskProvider } from './context/TaskContext';
+import { AuthProvider } from './context/AuthContext';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { MobileNav } from './components/layout/MobileNav';
@@ -14,26 +15,24 @@ import { CalendarView } from './components/calendar/CalendarView';
 import { SubjectsView } from './components/subjects/SubjectsView';
 import { AnnouncementsView } from './components/announcements/AnnouncementsView';
 import { SubjectFormModal } from './components/subjects/SubjectFormModal';
-import { FocusModeView } from './components/focus/FocusModeView';
 import { TaskDetailModal } from './components/tasks/TaskDetailModal';
 import { TaskFormModal } from './components/tasks/TaskFormModal';
 import { NotificationDrawer } from './components/notifications/NotificationDrawer';
 import { NotificationToastContainer } from './components/notifications/NotificationToastContainer';
-import { ExamsView } from './components/exams/ExamsView';
 import { TimetableView } from './components/timetable/TimetableView';
-import { AnalyticsView } from './components/analytics/AnalyticsView';
-import { NotesView } from './components/notes/NotesView';
-import { ResourcesView } from './components/resources/ResourcesView';
-import { RevisionView } from './components/revision/RevisionView';
-import { PlannerView } from './components/planner/PlannerView';
-import { GoalsView } from './components/goals/GoalsView';
-import { ActivityView } from './components/activity/ActivityView';
 import { SettingsView } from './components/settings/SettingsView';
 import { GlobalSearchModal } from './components/search/GlobalSearchModal';
 import { AdminPortalModal } from './components/admin/AdminPortalModal';
+import { AuthModal } from './components/auth/AuthModal';
+import { useAuth } from './context/AuthContext';
 
 const AppContent: React.FC = () => {
+  const { isAuthenticated, user } = useAuth();
   const [activeView, setActiveView] = useState('dashboard');
+
+  if (!isAuthenticated || !user) {
+    return <AuthModal forceFullPage={true} />;
+  }
 
   const renderActiveView = () => {
     switch (activeView) {
@@ -57,24 +56,6 @@ const AppContent: React.FC = () => {
         return <SubjectsView />;
       case 'announcements':
         return <AnnouncementsView onNavigate={setActiveView} />;
-      case 'focus':
-        return <FocusModeView />;
-      case 'exams':
-        return <ExamsView />;
-      case 'planner':
-        return <PlannerView />;
-      case 'notes':
-        return <NotesView />;
-      case 'resources':
-        return <ResourcesView />;
-      case 'revision':
-        return <RevisionView />;
-      case 'goals':
-        return <GoalsView />;
-      case 'analytics':
-        return <AnalyticsView />;
-      case 'activity':
-        return <ActivityView />;
       case 'settings':
         return <SettingsView />;
       default:
@@ -103,6 +84,7 @@ const AppContent: React.FC = () => {
       <NotificationToastContainer onNavigate={setActiveView} />
       <GlobalSearchModal onNavigate={setActiveView} />
       <AdminPortalModal />
+      <AuthModal />
     </div>
   );
 };
@@ -110,9 +92,11 @@ const AppContent: React.FC = () => {
 export default function App() {
   return (
     <ThemeProvider>
-      <TaskProvider>
-        <AppContent />
-      </TaskProvider>
+      <AuthProvider>
+        <TaskProvider>
+          <AppContent />
+        </TaskProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

@@ -579,6 +579,38 @@ export const supabaseService = {
     return !error;
   },
 
+  // --- Authorized Students Roster ---
+  async fetchAuthorizedStudents(): Promise<any[]> {
+    if (!this.isAvailable()) return [];
+    const { data, error } = await supabase!.from('authorized_students').select('*').order('student_id', { ascending: true });
+    if (error) return [];
+    return (data || []).map(row => ({
+      studentId: row.student_id,
+      fullName: row.full_name,
+      registrationCode: row.registration_code || 'MSCIT2026',
+      isRegistered: Boolean(row.is_registered),
+      registeredAt: row.registered_at
+    }));
+  },
+
+  async upsertAuthorizedStudent(student: { studentId: string; fullName: string; registrationCode?: string; isRegistered?: boolean; registeredAt?: string }): Promise<boolean> {
+    if (!this.isAvailable()) return false;
+    const { error } = await supabase!.from('authorized_students').upsert({
+      student_id: student.studentId,
+      full_name: student.fullName,
+      registration_code: student.registrationCode || 'MSCIT2026',
+      is_registered: Boolean(student.isRegistered),
+      registered_at: student.registeredAt || null
+    });
+    return !error;
+  },
+
+  async deleteAuthorizedStudent(studentId: string): Promise<boolean> {
+    if (!this.isAvailable()) return false;
+    const { error } = await supabase!.from('authorized_students').delete().eq('student_id', studentId);
+    return !error;
+  },
+
   // --- Realtime Subscriptions ---
   subscribeToChanges(table: string, onChange: () => void) {
     if (!this.isAvailable()) return () => {};

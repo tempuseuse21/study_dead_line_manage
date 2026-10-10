@@ -1,111 +1,114 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '../types';
+import { rosterService, StudentProfile } from '../lib/authorizedRoster';
 
 interface AuthContextType {
-  user: User | null;
-  members: User[];
+  user: StudentProfile | null;
   isAuthenticated: boolean;
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
-  login: (email: string) => Promise<boolean>;
-  register: (data: {
-    name: string;
-    email: string;
-    college: string;
-    course: string;
-    semester: string;
-  }) => Promise<boolean>;
-  switchUser: (userId: string) => Promise<void>;
-  updateProfile: (data: Partial<User>) => Promise<void>;
+  loginStudent: (studentId: string, passwordInput: string) => Promise<{ success: boolean; error?: string }>;
+  registerStudent: (input: {
+    studentId: string;
+    fullName: string;
+    registrationCode: string;
+    password: string;
+    confirmPassword: string;
+  }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   showAuthModal: boolean;
   setShowAuthModal: (show: boolean) => void;
-  showOnboarding: boolean;
-  setShowOnboarding: (show: boolean) => void;
+  authMode: 'login' | 'register';
+  setAuthMode: (mode: 'login' | 'register') => void;
 }
 
-const DEFAULT_USER: User = {
-  id: 'usr_student',
-  name: 'Student',
-  email: 'student@mscit.edu',
-  college: 'MSc IT Department',
-  course: 'MSc Information Technology',
-  semester: '2',
-  timezone: 'Asia/Kolkata',
-  joinedAt: new Date().toISOString()
+const CURRENT_USER_KEY = 'mscit_current_student';
+
+// Default initial user for instant seamless experience
+const DEFAULT_STUDENT: StudentProfile = {
+  id: 'usr_202612045',
+  studentId: '202612045',
+  fullName: 'Mayank Malhotra',
+  email: '202612045@mscit.edu',
+  registeredAt: new Date().toISOString(),
+  role: 'student'
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user] = useState<User | null>(DEFAULT_USER);
-  const [members] = useState<User[]>([DEFAULT_USER]);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>(() => {
-    const saved = localStorage.getItem('studysync_theme');
-    return (saved as 'light' | 'dark' | 'system') || 'dark';
+  const [user, setUser] = useState<StudentProfile | null>(() => {
+    try {
+      const stored = localStorage.getItem(CURRENT_USER_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error('Failed to parse current student session:', e);
+    }
+    // Return null so user is forced to log in before entering the site
+    return null;
   });
 
-  // Apply theme to document
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+
   useEffect(() => {
-    const root = document.documentElement;
-    localStorage.setItem('studysync_theme', theme);
-    
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else if (theme === 'light') {
-      root.classList.remove('dark');
+    if (user) {
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
     } else {
-      const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (isSystemDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
+      localStorage.removeItem(CURRENT_USER_KEY);
     }
-  }, [theme]);
+  }, [user]);
 
-  const login = async (): Promise<boolean> => {
-    setShowAuthModal(false);
-    return true;
+  const loginStudent = async (studentId: string, passwordInput: string) => {
+    const res = rosterService.authenticate(studentId, passwordInput);
+    if (res.success && res.user) {
+      setUser(res.user);
+      if (res.user.role === 'cr_admin' || res.user.studentId === 'admin') {
+        localStorage.setItem('studysync_is_admin', 'true');
+      }
+      setShowAuthModal(false);
+      return { success: true };
+    }
+    return { success: false, error: res.error || 'Authentication failed' };
   };
 
-  const register = async (): Promise<boolean> => {
-    setShowAuthModal(false);
-    setShowOnboarding(false);
-    return true;
+  const registerStudent = async (input: {
+    studentId: string;
+    fullName: string;
+    registrationCode: string;
+    password: string;
+    confirmPassword: string;
+  }) => {
+    const val = rosterService.validateRegistration(input);
+    if (!val.isValid) {
+      return { success: false, error: val.error };
+    }
+
+    try {
+      const profile = rosterService.registerStudent(input.studentId, input.fullName, input.password);
+      setUser(profile);
+      setShowAuthModal(false);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Registration failed' };
+    }
   };
-
-  const switchUser = async () => {};
-
-  const updateProfile = async () => {};
 
   const logout = () => {
-    setShowAuthModal(false);
-  };
-
-  const setTheme = (newTheme: 'light' | 'dark' | 'system') => {
-    setThemeState(newTheme);
+    setUser(null);
+    localStorage.removeItem(CURRENT_USER_KEY);
+    localStorage.removeItem('studysync_is_admin');
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        members,
-        isAuthenticated: true,
-        theme,
-        setTheme,
-        login,
-        register,
-        switchUser,
-        updateProfile,
+        isAuthenticated: !!user,
+        loginStudent,
+        registerStudent,
         logout,
         showAuthModal,
         setShowAuthModal,
-        showOnboarding,
-        setShowOnboarding
+        authMode,
+        setAuthMode
       }}
     >
       {children}

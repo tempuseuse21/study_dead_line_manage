@@ -290,13 +290,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginAdmin = async (pin: string): Promise<{ success: boolean; message?: string }> => {
     const p = pin.trim().toLowerCase();
-    if (p === 'iamcr' || p === 'admin' || p === 'cr123' || p === '1234' || p.length >= 4) {
+    if (p === 'mscit2026' || p === 'admin' || p === 'iamcr') {
       setIsAdmin(true);
       localStorage.setItem('studysync_is_admin', 'true');
-      logActivity('admin_login', 'CR Admin Mode Unlocked', 'system');
+      logActivity('admin_login', 'Super Admin Mode Unlocked', 'system');
       return { success: true };
     }
-    return { success: false, message: 'Invalid Admin Passcode. (Default PIN: iamcr)' };
+    return { success: false, message: 'Invalid Admin Password. Password: mscit2026' };
   };
 
   const logoutAdmin = () => {
@@ -618,6 +618,14 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = subscribeToBroadcastEvents((event: any) => {
       if (!event?.payload) return;
       if (event.type === 'NEW_TASK') {
+        if (supabaseService.isAvailable()) {
+          supabaseService.fetchTasks().then(ts => { if (ts.length > 0) setTasks(ts); });
+        } else {
+          fetch('/api/tasks')
+            .then(r => r.ok ? r.json() : null)
+            .then(apiTasks => { if (Array.isArray(apiTasks) && apiTasks.length > 0) setTasks(apiTasks); })
+            .catch(() => {});
+        }
         triggerWebsiteNotification({
           type: 'task',
           title: event.payload.title,
@@ -631,6 +639,17 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
           broadcast: false,
           chimeType: event.payload.priority === 'urgent' ? 'alert' : 'success'
         });
+      } else if (event.type === 'PORTAL_DATA_CHANGED' || event.type === 'TASK_STATUS_CHANGED') {
+        if (event.payload?.tasks) {
+          setTasks(event.payload.tasks);
+        } else if (supabaseService.isAvailable()) {
+          supabaseService.fetchTasks().then(ts => { if (ts.length > 0) setTasks(ts); });
+        } else {
+          fetch('/api/tasks')
+            .then(r => r.ok ? r.json() : null)
+            .then(apiTasks => { if (Array.isArray(apiTasks) && apiTasks.length > 0) setTasks(apiTasks); })
+            .catch(() => {});
+        }
       } else if (event.type === 'NEW_ANNOUNCEMENT') {
         triggerWebsiteNotification({
           type: 'announcement',
@@ -1015,19 +1034,42 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify(data)
       });
     } catch {}
+    broadcastPostEvent({
+      type: 'PORTAL_DATA_CHANGED',
+      payload: { action: 'task_updated', taskId }
+    });
     return updatedTask || (data as Task);
   };
 
   const deleteTask = async (taskId: string, passcode?: string): Promise<{ success: boolean; error?: string }> => {
-    if ((passcode || '').trim() !== 'iamcr') {
-      return { success: false, error: 'Incorrect authorization passcode. Deletion denied.' };
+    const task = tasks.find(t => t.id === taskId);
+    let currentUser: any = null;
+    try {
+      const stored = localStorage.getItem('mscit_current_student');
+      if (stored) currentUser = JSON.parse(stored);
+    } catch {}
+
+    const isCreator = task && currentUser && (
+      task.createdById === currentUser.studentId ||
+      task.createdById === currentUser.id ||
+      task.createdByName === currentUser.fullName
+    );
+    const isPasscodeValid = (passcode || '').trim().toLowerCase() === 'iamcr' || isAdmin;
+
+    if (!isCreator && !isPasscodeValid) {
+      return { success: false, error: 'Only the uploader of this task (or CR Admin with PIN iamcr) can delete it.' };
     }
+
     setTasks(prev => prev.filter(t => t.id !== taskId));
     if (selectedTask?.id === taskId) setSelectedTask(null);
     if (supabaseService.isAvailable()) {
       supabaseService.deleteTask(taskId);
     }
     try { await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' }); } catch {}
+    broadcastPostEvent({
+      type: 'PORTAL_DATA_CHANGED',
+      payload: { action: 'task_deleted', taskId }
+    });
     return { success: true };
   };
 

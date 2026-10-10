@@ -15,8 +15,10 @@ import {
 } from 'lucide-react';
 import { Priority } from '../../types';
 import { useTasks } from '../../context/TaskContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const TaskFormModal: React.FC = () => {
+  const { user } = useAuth();
   const {
     isCreateTaskModalOpen,
     setIsCreateTaskModalOpen,
@@ -77,8 +79,8 @@ export const TaskFormModal: React.FC = () => {
         tags: tags.length > 0 ? tags : ['Academic'],
         subtasks: [],
         assignedToIds: ['all'],
-        createdById: 'student',
-        createdByName: 'Student'
+        createdById: user?.studentId || '202612045',
+        createdByName: user?.fullName || 'Student'
       });
 
       setTitle('');

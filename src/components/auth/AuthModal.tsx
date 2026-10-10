@@ -2,317 +2,314 @@ import React, { useState } from 'react';
 import {
   X,
   GraduationCap,
-  Mail,
   User,
-  BookOpen,
-  ArrowRight,
-  Sparkles,
-  CheckCircle2,
   Lock,
-  UserCheck,
-  ShieldCheck
+  ArrowRight,
+  ShieldCheck,
+  KeyRound,
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { DEFAULT_BATCH_REGISTRATION_CODE } from '../../lib/authorizedRoster';
 
-export const AuthModal: React.FC = () => {
+interface AuthModalProps {
+  forceFullPage?: boolean;
+}
+
+export const AuthModal: React.FC<AuthModalProps> = ({ forceFullPage = false }) => {
   const {
     user,
-    members,
     showAuthModal,
     setShowAuthModal,
-    login,
-    register,
-    switchUser
+    loginStudent,
+    registerStudent,
+    authMode,
+    setAuthMode
   } = useAuth();
 
-  const [mode, setMode] = useState<'signin' | 'register'>('signin');
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [course, setCourse] = useState('MSc Information Technology');
-  const [semester, setSemester] = useState('2');
-  const [college, setCollege] = useState('St. Xavier Institute of Technology');
+  // Login form state
+  const [loginStudentId, setLoginStudentId] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Register form state
+  const [regStudentId, setRegStudentId] = useState('');
+  const [regFullName, setRegFullName] = useState('');
+  const [regCode, setRegCode] = useState(DEFAULT_BATCH_REGISTRATION_CODE);
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
-  if (!showAuthModal) return null;
+  const isMandatory = forceFullPage || !user;
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  if (!isMandatory && !showAuthModal) return null;
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      setError('Please enter your student email');
-      return;
-    }
-    setError('');
+    setErrorMsg('');
+    setSuccessMsg('');
     setIsLoading(true);
-    try {
-      await login(email);
+
+    const res = await loginStudent(loginStudentId, loginPassword);
+    setIsLoading(false);
+
+    if (!res.success) {
+      setErrorMsg(res.error || 'Authentication failed');
+    } else {
       setShowAuthModal(false);
-    } catch {
-      setError('Failed to sign in. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email) {
-      setError('Please provide your name and email');
-      return;
-    }
-    setError('');
+    setErrorMsg('');
+    setSuccessMsg('');
     setIsLoading(true);
-    try {
-      await register({
-        name,
-        email,
-        college,
-        course,
-        semester,
-        groupAction: 'join',
-        inviteCode: 'MSCIT2026'
-      });
-      setShowAuthModal(false);
-    } catch {
-      setError('Registration failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleQuickSelect = async (memberId: string) => {
-    setIsLoading(true);
-    try {
-      await switchUser(memberId);
-      setShowAuthModal(false);
-    } catch {
-      setError('Failed to switch user');
-    } finally {
-      setIsLoading(false);
+    const res = await registerStudent({
+      studentId: regStudentId,
+      fullName: regFullName,
+      registrationCode: regCode,
+      password: regPassword,
+      confirmPassword: regConfirmPassword
+    });
+
+    setIsLoading(false);
+
+    if (!res.success) {
+      setErrorMsg(res.error || 'Registration failed');
+    } else {
+      setSuccessMsg('Registration successful! You are now logged in.');
+      setTimeout(() => setShowAuthModal(false), 1200);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-lg animate-in fade-in duration-200 ${
+        isMandatory ? 'min-h-screen' : ''
+      }`}
+      onClick={() => {
+        if (!isMandatory) setShowAuthModal(false);
+      }}
+    >
       <div
-        className="relative w-full max-w-md rounded-[32px] border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink p-6 sm:p-8 shadow-2xl overflow-hidden"
+        className="relative w-full max-w-md rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
-        {/* Close Button */}
-        <button
-          onClick={() => setShowAuthModal(false)}
-          className="absolute top-5 right-5 p-2 rounded-full text-ink-muted hover:text-ink-muted dark:hover:text-bg hover:bg-ink-faint dark:hover:bg-ink transition-colors"
-          aria-label="Close modal"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        {/* Close Button (only if not mandatory login) */}
+        {!isMandatory && (
+          <button
+            onClick={() => setShowAuthModal(false)}
+            className="absolute top-5 right-5 p-2 rounded-full text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-subtle)] transition-colors cursor-pointer"
+            aria-label="Close modal"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
 
-        {/* Header */}
+        {/* Header Banner */}
         <div className="text-center mb-6">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-none bg-ink dark:bg-ink-faint text-bg dark:text-ink text-white shadow-none shadow-blue-500/20 mb-3">
-            <GraduationCap className="h-6 w-6" />
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl gradient-brand-bg text-white shadow-lg shadow-indigo-500/25 mb-3">
+            <GraduationCap className="h-7 w-7" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-ink dark:text-white tracking-tight">
-            {mode === 'signin' ? 'Welcome to StudySync' : 'Join Academic Workspace'}
+          <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-[10px] font-bold uppercase tracking-wider mb-1.5 border border-indigo-500/20">
+            Dhirubhai Ambani University
+          </span>
+          <h2 className="text-xl sm:text-2xl font-display font-extrabold text-[var(--text-main)] tracking-tight">
+            MSc IT Shared Deadline Portal
           </h2>
-          <p className="text-xs text-ink-muted dark:text-ink-muted mt-1">
-            Common Academic Dashboard & Deadline Tracker for MSc IT
+          <p className="text-xs text-[var(--text-muted)] mt-1">
+            Sign in to access shared assignments, calendar, and batch timetable.
           </p>
         </div>
 
-        {/* Mode Toggle Tabs */}
-        <div className="flex p-1 mb-5 rounded-none bg-ink-faint dark:bg-ink text-xs font-bold">
+        {/* Mode Switcher Tabs */}
+        <div className="flex p-1 mb-5 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs font-semibold">
           <button
             type="button"
             onClick={() => {
-              setMode('signin');
-              setError('');
+              setAuthMode('login');
+              setErrorMsg('');
+              setSuccessMsg('');
             }}
-            className={`flex-1 py-2 rounded-none transition-all ${
-              mode === 'signin'
-                ? 'bg-bg dark:bg-ink text-ink dark:text-bg dark:text-blue-400 shadow-none'
-                : 'text-ink-muted dark:text-ink-muted hover:text-ink'
+            className={`flex-1 py-2.5 rounded-xl transition-all cursor-pointer ${
+              authMode === 'login'
+                ? 'gradient-brand-bg text-white shadow-sm font-bold'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
             }`}
           >
-            Sign In / Quick Access
+            Student Login
           </button>
           <button
             type="button"
             onClick={() => {
-              setMode('register');
-              setError('');
+              setAuthMode('register');
+              setErrorMsg('');
+              setSuccessMsg('');
             }}
-            className={`flex-1 py-2 rounded-none transition-all ${
-              mode === 'register'
-                ? 'bg-bg dark:bg-ink text-ink dark:text-bg dark:text-blue-400 shadow-none'
-                : 'text-ink-muted dark:text-ink-muted hover:text-ink'
+            className={`flex-1 py-2.5 rounded-xl transition-all cursor-pointer ${
+              authMode === 'register'
+                ? 'gradient-brand-bg text-white shadow-sm font-bold'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
             }`}
           >
-            Register Student
+            First-Time Registration
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 rounded-none bg-rose-50 dark:bg-rose-950/40 border-[1.5px] border-rose-200 dark:border-rose-900 text-xs text-rose-600 dark:text-rose-400 font-medium text-center">
-            {error}
+        {/* Alerts */}
+        {errorMsg && (
+          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+            <span>{errorMsg}</span>
           </div>
         )}
 
-        {mode === 'signin' ? (
-          <div className="space-y-4">
-            {/* Quick Demo Student Profiles */}
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-2">
-                Quick Select Student Account
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {members.slice(0, 4).map(m => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => handleQuickSelect(m.id)}
-                    className={`flex items-center gap-2 p-2.5 rounded-none border-[1.5px] text-left transition-all ${
-                      user?.id === m.id
-                        ? 'border-blue-500 bg-ink-faint dark:bg-ink/50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/20'
-                        : 'border-ink-faint dark:border-ink-faint bg-bg/50 dark:bg-ink/40 hover:border-blue-300 hover:bg-ink-faint'
-                    }`}
-                  >
-                    <img
-                      src={m.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
-                      alt={m.name}
-                      className="h-7 w-7 rounded-full object-cover flex-shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-ink dark:text-bg truncate">{m.name.split(' ')[0]}</p>
-                      <p className="text-[10px] text-ink-muted truncate">Sem {m.semester || '2'}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="relative flex py-1 items-center">
-              <div className="flex-grow border-t-[1.5px] border-ink-faint dark:border-ink-faint" />
-              <span className="flex-shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-ink-muted">or sign in with email</span>
-              <div className="flex-grow border-t-[1.5px] border-ink-faint dark:border-ink-faint" />
-            </div>
-
-            {/* Email form */}
-            <form onSubmit={handleSignIn} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted mb-1">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-3 h-4 w-4 text-ink-muted" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="student@mscit.edu"
-                    className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink pl-10 pr-4 py-2.5 text-xs text-ink dark:text-white placeholder:text-ink-muted focus:border-blue-500 focus:outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 rounded-none bg-ink dark:bg-ink-faint text-bg dark:text-ink hover:bg-ink dark:hover:bg-ink-faint py-3 text-xs font-bold text-white shadow-none shadow-blue-500/25 active:scale-95 transition-all disabled:opacity-50"
-              >
-                <span>{isLoading ? 'Signing In...' : 'Sign In to Workspace'}</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </form>
+        {successMsg && (
+          <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+            <span>{successMsg}</span>
           </div>
-        ) : (
-          /* Registration Form */
-          <form onSubmit={handleRegister} className="space-y-3">
+        )}
+
+        {authMode === 'login' ? (
+          /* Student Login Form */
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted mb-1">
-                Full Name
+              <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1">
+                Student ID / Roll Number *
               </label>
               <div className="relative">
-                <User className="absolute left-3.5 top-3 h-4 w-4 text-ink-muted" />
+                <User className="absolute left-3.5 top-3 h-4 w-4 text-[var(--text-faint)]" />
                 <input
                   type="text"
                   required
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="e.g. Rahul Sharma"
-                  className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink pl-10 pr-4 py-2.5 text-xs text-ink dark:text-white placeholder:text-ink-muted focus:border-blue-500 focus:outline-hidden"
+                  value={loginStudentId}
+                  onChange={e => setLoginStudentId(e.target.value)}
+                  placeholder="e.g. 202612045"
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] pl-10 pr-4 py-2.5 text-xs text-[var(--text-main)] uppercase font-mono font-semibold focus:border-indigo-500 focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted mb-1">
-                Student Email
+              <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1">
+                Password *
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-3 h-4 w-4 text-ink-muted" />
+                <Lock className="absolute left-3.5 top-3 h-4 w-4 text-[var(--text-faint)]" />
                 <input
-                  type="email"
+                  type="password"
                   required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="student@college.edu"
-                  className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink pl-10 pr-4 py-2.5 text-xs text-ink dark:text-white placeholder:text-ink-muted focus:border-blue-500 focus:outline-hidden"
+                  value={loginPassword}
+                  onChange={e => setLoginPassword(e.target.value)}
+                  placeholder="Enter your account password..."
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] pl-10 pr-4 py-2.5 text-xs text-[var(--text-main)] focus:border-indigo-500 focus:outline-none"
                 />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted mb-1">
-                  Course
-                </label>
-                <input
-                  type="text"
-                  value={course}
-                  onChange={e => setCourse(e.target.value)}
-                  className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-3.5 py-2.5 text-xs text-ink dark:text-white focus:border-blue-500 focus:outline-hidden"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-ink-muted dark:text-ink-muted mb-1">
-                  Semester
-                </label>
-                <select
-                  value={semester}
-                  onChange={e => setSemester(e.target.value)}
-                  className="w-full rounded-none border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink px-3 py-2.5 text-xs text-ink dark:text-white focus:border-blue-500 focus:outline-hidden"
-                >
-                  <option value="1">Semester 1</option>
-                  <option value="2">Semester 2</option>
-                  <option value="3">Semester 3</option>
-                  <option value="4">Semester 4</option>
-                </select>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 rounded-none bg-ink dark:bg-ink-faint text-bg dark:text-ink hover:bg-ink dark:hover:bg-ink-faint py-3 text-xs font-bold text-white shadow-none shadow-blue-500/25 active:scale-95 transition-all mt-2 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 rounded-xl gradient-brand-bg text-white py-3 text-xs font-bold shadow-md shadow-indigo-500/25 active:scale-98 transition-all cursor-pointer disabled:opacity-50 mt-2"
             >
-              <span>{isLoading ? 'Creating Account...' : 'Join Shared Dashboard'}</span>
+              <span>{isLoading ? 'Authenticating...' : 'Log In to Batch Portal'}</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
-        )}
+        ) : (
+          /* Student Registration Form */
+          <form onSubmit={handleRegisterSubmit} className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1">
+                Student ID / Roll Number *
+              </label>
+              <input
+                type="text"
+                required
+                value={regStudentId}
+                onChange={e => setRegStudentId(e.target.value)}
+                placeholder="e.g. 202612045"
+                className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-2 text-xs text-[var(--text-main)] uppercase font-mono font-semibold focus:border-indigo-500 focus:outline-none"
+              />
+            </div>
 
-        {/* Continue as Guest Footer */}
-        <div className="mt-5 pt-4 border-t-[1.5px] border-ink-faint dark:border-ink-faint text-center">
-          <button
-            type="button"
-            onClick={() => setShowAuthModal(false)}
-            className="text-xs font-semibold text-ink-muted dark:text-ink-muted hover:text-ink dark:text-bg dark:hover:text-blue-400 transition-colors"
-          >
-            Continue as Guest (Browse & Add Tasks Freely) →
-          </button>
-        </div>
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1">
+                Authorized Full Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={regFullName}
+                onChange={e => setRegFullName(e.target.value)}
+                placeholder="e.g. Aarav Sharma (Must match batch roster name)"
+                className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-2 text-xs text-[var(--text-main)] focus:border-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1">
+                Batch Registration Passcode *
+              </label>
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[var(--text-faint)]" />
+                <input
+                  type="text"
+                  required
+                  value={regCode}
+                  onChange={e => setRegCode(e.target.value)}
+                  placeholder="Passcode (Default: MSCIT2026)"
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] pl-9 pr-3 py-2 text-xs text-[var(--text-main)] font-mono focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1">
+                  Create Password *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={regPassword}
+                  onChange={e => setRegPassword(e.target.value)}
+                  placeholder="Min 6 chars"
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 text-xs text-[var(--text-main)] focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1">
+                  Confirm Password *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={regConfirmPassword}
+                  onChange={e => setRegConfirmPassword(e.target.value)}
+                  placeholder="Repeat password"
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 text-xs text-[var(--text-main)] focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 rounded-xl gradient-brand-bg text-white py-2.5 text-xs font-bold shadow-md shadow-indigo-500/25 active:scale-98 transition-all mt-2 cursor-pointer disabled:opacity-50"
+            >
+              <span>{isLoading ? 'Validating Roster & Registering...' : 'Complete Batch Registration'}</span>
+              <ShieldCheck className="h-4 w-4" />
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

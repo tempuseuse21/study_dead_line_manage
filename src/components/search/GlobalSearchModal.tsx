@@ -18,7 +18,7 @@ interface GlobalSearchModalProps {
   onNavigate: (view: string) => void;
 }
 
-type SearchCategory = 'all' | 'tasks' | 'subjects' | 'announcements' | 'exams' | 'notes';
+type SearchCategory = 'all' | 'tasks' | 'subjects' | 'announcements';
 
 export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ onNavigate }) => {
   const {
@@ -27,8 +27,6 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ onNavigate
     tasks,
     subjects,
     announcements,
-    exams,
-    notes,
     setSelectedTask
   } = useTasks();
 
@@ -100,34 +98,10 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ onNavigate
         : announcements.slice(0, 3))
     : [];
 
-  const matchedExams = (activeCategory === 'all' || activeCategory === 'exams')
-    ? (q
-        ? exams.filter(
-            e =>
-              e.title.toLowerCase().includes(q) ||
-              e.notes?.toLowerCase().includes(q) ||
-              e.venue?.toLowerCase().includes(q)
-          )
-        : exams.slice(0, 3))
-    : [];
-
-  const matchedNotes = (activeCategory === 'all' || activeCategory === 'notes')
-    ? (q
-        ? notes.filter(
-            n =>
-              n.title.toLowerCase().includes(q) ||
-              n.content.toLowerCase().includes(q) ||
-              n.tags?.some(t => t.toLowerCase().includes(q))
-          )
-        : notes.slice(0, 3))
-    : [];
-
   const totalResults =
     matchedTasks.length +
     matchedSubjects.length +
-    matchedAnnouncements.length +
-    matchedExams.length +
-    matchedNotes.length;
+    matchedAnnouncements.length;
 
   return (
     <div
@@ -172,9 +146,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ onNavigate
               { id: 'all', label: 'All Items' },
               { id: 'tasks', label: `Tasks (${matchedTasks.length})` },
               { id: 'subjects', label: `Subjects (${matchedSubjects.length})` },
-              { id: 'announcements', label: `Notices (${matchedAnnouncements.length})` },
-              { id: 'exams', label: `Exams (${matchedExams.length})` },
-              { id: 'notes', label: `Notes (${matchedNotes.length})` }
+              { id: 'announcements', label: `Notices (${matchedAnnouncements.length})` }
             ] as const
           ).map(tab => (
             <button
@@ -305,79 +277,6 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ onNavigate
                     </div>
                     <ArrowRight className="w-4 h-4 text-[var(--text-faint)] group-hover:text-amber-500 flex-shrink-0 ml-2 group-hover:translate-x-0.5 transition-all" />
                   </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Exams */}
-          {matchedExams.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="text-[0.65rem] font-mono font-bold uppercase tracking-wider text-[var(--text-faint)] flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-rose-500" />
-                  Upcoming Exams ({matchedExams.length})
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                {matchedExams.map(e => (
-                  <button
-                    key={e.id}
-                    onClick={() => {
-                      onNavigate('exams');
-                      setIsSearchModalOpen(false);
-                    }}
-                    className="flex w-full items-center justify-between p-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-rose-500/50 text-left transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 truncate">
-                      <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500 flex-shrink-0">
-                        <Calendar className="w-4 h-4" />
-                      </div>
-                      <div className="truncate">
-                        <p className="font-display font-semibold text-xs text-[var(--text-main)] group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors truncate">
-                          {e.title}
-                        </p>
-                        <p className="text-[0.65rem] text-[var(--text-muted)] font-mono">
-                          Date: {e.examDate} {e.examTime ? `at ${e.examTime}` : ''} • Prep: {e.preparationPercent}%
-                        </p>
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-[var(--text-faint)] group-hover:text-rose-500 flex-shrink-0 ml-2 group-hover:translate-x-0.5 transition-all" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Notes */}
-          {matchedNotes.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="text-[0.65rem] font-mono font-bold uppercase tracking-wider text-[var(--text-faint)] flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-purple-500" />
-                  Notes & Summaries ({matchedNotes.length})
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                {matchedNotes.map(n => (
-                  <div
-                    key={n.id}
-                    className="flex w-full items-center justify-between p-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-purple-500/50 text-left transition-all"
-                  >
-                    <div className="flex items-center gap-3 truncate">
-                      <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500 flex-shrink-0">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <div className="truncate">
-                        <p className="font-display font-semibold text-xs text-[var(--text-main)] truncate">
-                          {n.title}
-                        </p>
-                        <p className="text-[0.65rem] text-[var(--text-muted)] truncate">
-                          {n.content}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
                 ))}
               </div>
             </div>

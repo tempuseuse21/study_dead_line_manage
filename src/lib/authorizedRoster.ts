@@ -24,45 +24,8 @@ export interface StudentProfile {
 // Default registration code for MSc IT batch
 export const DEFAULT_BATCH_REGISTRATION_CODE = 'MSCIT2026';
 
-// Pre-configured roster of 125 MSc IT Batch Students
-const DEFAULT_NAMES = [
-  'Aarav Sharma', 'Aadhya Patel', 'Abhinav Verma', 'Aditi Rao', 'Aditya Kumar',
-  'Advait Nair', 'Ahana Joshi', 'Akash Gupta', 'Akanksha Singh', 'Aman Mehta',
-  'Ananya Roy', 'Aniket Das', 'Anisha Kulkarni', 'Anshul Mishra', 'Anushka Sen',
-  'Arjun Agarwal', 'Arnav Reddy', 'Avani Bhat', 'Ayush Kapoor', 'Bhavya Saxena',
-  'Chaitanya Pillai', 'Chetan Desai', 'Devansh Pandey', 'Dia Mukherjee', 'Divya Iyer',
-  'Divyansh Garg', 'Esha Malviya', 'Gautam Nambiar', 'Gauri Hegde', 'Harsh Vardhan',
-  'Harshita Menon', 'Ishaan Bhatt', 'Ishita Trivedi', 'Jatin Choudhary', 'Jiya Singhal',
-  'Kabir Ahuja', 'Kavya Pillai', 'Khushi Shah', 'Krishnan Unni', 'Kunal Merchant',
-  'Lakshya Narang', 'Lavanya Shenoy', 'Madhav Rastogi', 'Manasvi Varma', 'Mayank Malhotra',
-  'Meera Menon', 'Mihir Godbole', 'Mitansh Dave', 'Nikhil Sethi', 'Nisha Bajaj',
-  'Nitin Grover', 'Ojas Swain', 'Omkar Jadhav', 'Palak Somani', 'Parth Shinde font',
-  'Pranav Kamat', 'Prisha Oberoi', 'Priya Nambisan', 'Rahul Deshmukh', 'Rajeshwari Chawla',
-  'Rohan Banga', 'Riya Talwar', 'Ritik Bhalla', 'Roshni Nayak', 'Rudra Kashyap',
-  'Saisha Parekh', 'Samarth Kadam', 'Sameer Quadri', 'Sanjana Hegde', 'Sanket Sawant',
-  'Sara Khan', 'Siddharth Kaushik', 'Simran Arora', 'Sneha Mohanty', 'Soham Kulkarni',
-  'Sparsh Goel', 'Srishti Rathi', 'Stuti Bhandari', 'Subhashree Bhowmick', 'Suhana Bose',
-  'Sumit Solanki', 'Suraj Chauhan', 'Tanisha Virk', 'Tanmay Prabhu', 'Tushar Aggarwal',
-  'Utkarsh Shrivastav', 'Vaibhav Soni', 'Vaishnavi Pai', 'Varun Naidu', 'Vedant Joshi',
-  'Vidhi Thakkar', 'Vikramaditya Rao', 'Vinay Kumar', 'Vishwa Shah', 'Yash Pathak',
-  'Yashasvi Tomar', 'Yuvraj Thakur', 'Zoya Siddiqui', 'Aarti Phadke', 'Abhay Mahajan',
-  'Alok Thapar', 'Anita Sundaram', 'Archana Sahu', 'Ashwin Kurup', 'Bhavesh Chheda',
-  'Deepak Shenoy', 'Geeta Bhatia', 'Hemant Rane', 'Jayant Shirke', 'Kirti Salvi',
-  'Mahesh Shinde', 'Neelam Chaudhari', 'Pankaj Vohra', 'Pooja Dalvi', 'Prakash More',
-  'Radhika Parab', 'Ramesh Jadhav', 'Reshma Pawar', 'Sachin Kadam', 'Sangeeta Sathe',
-  'Satish Gawde', 'Shalini Korgaonkar', 'Sunil Bhagat', 'Swati Tamhankar', 'Vijay Vernekar'
-];
-
 export function generateInitialRoster(): AuthorizedStudent[] {
-  return DEFAULT_NAMES.map((name, index) => {
-    const num = (index + 1).toString().padStart(3, '0');
-    return {
-      studentId: `202612${num}`, // Primary format: 202612001 to 202612125 (e.g. 202612045)
-      fullName: name,
-      registrationCode: DEFAULT_BATCH_REGISTRATION_CODE,
-      isRegistered: false
-    };
-  });
+  return [];
 }
 
 // Local storage key for roster persistence

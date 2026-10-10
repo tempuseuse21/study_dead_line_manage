@@ -302,7 +302,7 @@ export const TimetableView: React.FC<{ onNavigate?: (view: string) => void }> = 
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300 pb-24">
+    <div className="space-y-6 w-full max-w-7xl mx-auto min-w-0 overflow-x-hidden animate-in fade-in duration-300 pb-24">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

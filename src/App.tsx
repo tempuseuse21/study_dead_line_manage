@@ -64,13 +64,13 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bg dark:bg-ink text-ink dark:text-bg flex flex-col font-sans transition-colors">
+    <div className="min-h-screen bg-bg dark:bg-ink text-ink dark:text-bg flex flex-col font-sans transition-colors w-full max-w-full overflow-x-hidden">
       <Navbar onNavigate={setActiveView} activeView={activeView} />
       
-      <div className="flex-1 grid lg:grid-cols-[280px_1fr] w-full items-stretch">
+      <div className="flex-1 grid lg:grid-cols-[280px_1fr] w-full max-w-full items-stretch min-w-0">
         <Sidebar activeView={activeView} onNavigate={setActiveView} />
         
-        <main className="p-4 sm:p-6 lg:p-8 overflow-y-auto pb-24 lg:pb-8 flex flex-col gap-8 min-w-0">
+        <main className="p-3 sm:p-6 lg:p-8 overflow-y-auto pb-24 lg:pb-8 flex flex-col gap-8 min-w-0 w-full max-w-full">
           {renderActiveView()}
         </main>
       </div>

@@ -155,7 +155,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ onNavigate
     });
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-24">
+    <div className="space-y-6 w-full max-w-6xl mx-auto min-w-0 overflow-x-hidden pb-24">
       {/* 1. Header Banner */}
       <div className="rounded-3xl border-[1.5px] border-ink-faint dark:border-ink-faint bg-bg dark:bg-ink p-6 shadow-none">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

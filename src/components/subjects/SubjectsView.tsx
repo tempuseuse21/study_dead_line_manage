@@ -18,7 +18,7 @@ export const SubjectsView: React.FC = () => {
   const subjectTasks = tasks.filter(t => t.subjectId === activeSubjectId);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 w-full max-w-7xl mx-auto min-w-0 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

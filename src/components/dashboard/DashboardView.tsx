@@ -161,7 +161,7 @@ export const DashboardView: React.FC<{ onNavigate?: (view: string) => void }> = 
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-300">
+    <div className="space-y-8 w-full max-w-7xl mx-auto min-w-0 overflow-x-hidden animate-in fade-in duration-300">
       {/* ── Header Banner ── */}
       <div className="relative overflow-hidden rounded-3xl gradient-brand-bg text-white p-6 sm:p-8 shadow-xl shadow-indigo-500/15">
         <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-white/10 blur-2xl" />

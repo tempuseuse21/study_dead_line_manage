@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useTasks } from '../../context/TaskContext';
 import { useAuth } from '../../context/AuthContext';
@@ -18,11 +18,7 @@ import {
   Calendar,
   BookOpen,
   Megaphone,
-  Settings,
-  Maximize2,
-  Minimize2,
-  Smartphone,
-  Download
+  Settings
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -43,58 +39,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, activeView }) => {
     tasks,
     unreadAnnouncementsCount
   } = useTasks();
-
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
-
-  // Listen for Fullscreen state change
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  // Listen for PWA Install Prompt
-  useEffect(() => {
-    const handleBeforeInstall = (e: Event) => {
-      e.preventDefault();
-      setInstallPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-  }, []);
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error('Fullscreen request error:', err);
-      });
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().catch(err => {
-          console.error('Exit fullscreen error:', err);
-        });
-      }
-    }
-  };
-
-  const handleInstallApp = async () => {
-    if (installPrompt) {
-      installPrompt.prompt();
-      const { outcome } = await installPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setInstallPrompt(null);
-      }
-    } else {
-      alert(
-        '📲 Add to Home Screen Instructions:\n\n' +
-        '• Android / Chrome: Tap browser menu (⋮) -> Select "Add to Home screen" or "Install App".\n' +
-        '• iPhone / Safari: Tap Share button (⎋) -> Scroll & select "Add to Home Screen".'
-      );
-    }
-  };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const activeTaskCount = tasks.filter(t => t.status !== 'completed').length;
@@ -163,29 +107,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, activeView }) => {
 
       {/* Action Buttons & Profile Controls */}
       <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-        {/* Add to Homescreen Button */}
-        <button
-          onClick={handleInstallApp}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 transition-all cursor-pointer text-xs font-bold"
-          title="Add to Home Screen / Install App"
-        >
-          <Smartphone className="w-4 h-4 text-indigo-500" />
-          <span className="hidden sm:inline">Add to Homescreen</span>
-        </button>
-
-        {/* Fullscreen Toggle Button */}
-        <button
-          onClick={toggleFullscreen}
-          className="p-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-indigo-500/10 transition-all cursor-pointer"
-          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Mode'}
-        >
-          {isFullscreen ? (
-            <Minimize2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          ) : (
-            <Maximize2 className="w-4 h-4" />
-          )}
-        </button>
-
         {/* Search Button */}
         <button
           onClick={() => setIsSearchModalOpen(true)}

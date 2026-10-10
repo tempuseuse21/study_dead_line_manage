@@ -24,6 +24,7 @@ import { SettingsView } from './components/settings/SettingsView';
 import { GlobalSearchModal } from './components/search/GlobalSearchModal';
 import { AdminPortalModal } from './components/admin/AdminPortalModal';
 import { AuthModal } from './components/auth/AuthModal';
+import { PWAInstallPrompt } from './components/common/PWAInstallPrompt';
 import { useAuth } from './context/AuthContext';
 
 const AppContent: React.FC = () => {
@@ -85,6 +86,7 @@ const AppContent: React.FC = () => {
       <GlobalSearchModal onNavigate={setActiveView} />
       <AdminPortalModal />
       <AuthModal />
+      <PWAInstallPrompt />
     </div>
   );
 };

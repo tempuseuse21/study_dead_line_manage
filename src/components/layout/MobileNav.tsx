@@ -9,7 +9,17 @@ import {
   Plus,
   Bell,
   X,
-  Menu
+  Menu,
+  BookOpen,
+  GraduationCap,
+  ListTodo,
+  RotateCcw,
+  StickyNote,
+  Library,
+  Target,
+  BarChart3,
+  Activity,
+  Settings
 } from 'lucide-react';
 import { useTasks } from '../../context/TaskContext';
 
@@ -38,7 +48,17 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeView, onNavigate }) 
   const moreMenuItems = [
     { id: 'timetable', label: 'Class Timetable', icon: Clock },
     { id: 'calendar', label: 'Calendar Planner', icon: Calendar },
-    { id: 'focus', label: 'Focus Pomodoro Mode', icon: Zap }
+    { id: 'subjects', label: 'Subjects', icon: BookOpen },
+    { id: 'exams', label: 'Exam Schedule', icon: GraduationCap },
+    { id: 'focus', label: 'Focus Pomodoro Mode', icon: Zap },
+    { id: 'planner', label: 'Daily Study Planner', icon: ListTodo },
+    { id: 'revision', label: 'Revision Tracker', icon: RotateCcw },
+    { id: 'notes', label: 'Notes & Cards', icon: StickyNote },
+    { id: 'resources', label: 'Resource Library', icon: Library },
+    { id: 'goals', label: 'Academic Goals', icon: Target },
+    { id: 'analytics', label: 'Productivity Analytics', icon: BarChart3 },
+    { id: 'activity', label: 'Activity Log', icon: Activity },
+    { id: 'settings', label: 'Settings & Data Backup', icon: Settings }
   ];
 
   const handleNavClick = (viewId: string) => {

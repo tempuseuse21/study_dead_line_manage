@@ -21,6 +21,16 @@ import { NotificationDrawer } from './components/notifications/NotificationDrawe
 import { NotificationToastContainer } from './components/notifications/NotificationToastContainer';
 import { ExamsView } from './components/exams/ExamsView';
 import { TimetableView } from './components/timetable/TimetableView';
+import { AnalyticsView } from './components/analytics/AnalyticsView';
+import { NotesView } from './components/notes/NotesView';
+import { ResourcesView } from './components/resources/ResourcesView';
+import { RevisionView } from './components/revision/RevisionView';
+import { PlannerView } from './components/planner/PlannerView';
+import { GoalsView } from './components/goals/GoalsView';
+import { ActivityView } from './components/activity/ActivityView';
+import { SettingsView } from './components/settings/SettingsView';
+import { GlobalSearchModal } from './components/search/GlobalSearchModal';
+import { AdminPortalModal } from './components/admin/AdminPortalModal';
 
 const AppContent: React.FC = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -51,6 +61,22 @@ const AppContent: React.FC = () => {
         return <FocusModeView />;
       case 'exams':
         return <ExamsView />;
+      case 'planner':
+        return <PlannerView />;
+      case 'notes':
+        return <NotesView />;
+      case 'resources':
+        return <ResourcesView />;
+      case 'revision':
+        return <RevisionView />;
+      case 'goals':
+        return <GoalsView />;
+      case 'analytics':
+        return <AnalyticsView />;
+      case 'activity':
+        return <ActivityView />;
+      case 'settings':
+        return <SettingsView />;
       default:
         return <DashboardView onNavigate={setActiveView} />;
     }
@@ -75,6 +101,8 @@ const AppContent: React.FC = () => {
       <SubjectFormModal />
       <NotificationDrawer onNavigate={setActiveView} />
       <NotificationToastContainer onNavigate={setActiveView} />
+      <GlobalSearchModal onNavigate={setActiveView} />
+      <AdminPortalModal />
     </div>
   );
 };

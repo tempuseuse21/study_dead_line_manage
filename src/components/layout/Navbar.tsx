@@ -6,10 +6,11 @@ import {
   Plus,
   Sun,
   Moon,
-  Flame,
   Bell,
-  CheckCircle2,
-  Database
+  Database,
+  Search,
+  ShieldCheck,
+  ShieldAlert
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -22,8 +23,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
   const {
     setIsCreateTaskModalOpen,
     notifications,
-    analytics,
     setIsNotificationDrawerOpen,
+    setIsSearchModalOpen,
+    setIsUnlockAdminModalOpen,
+    isAdmin,
     isSupabaseConnected
   } = useTasks();
 
@@ -73,7 +76,33 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
       </div>
 
       {/* Global Actions & Controls */}
-      <div className="flex items-center gap-1.5 sm:gap-4">
+      <div className="flex items-center gap-1.5 sm:gap-3">
+        {/* Global Search Button */}
+        <button
+          onClick={() => setIsSearchModalOpen(true)}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all cursor-pointer text-xs font-medium"
+          title="Search Tasks, Subjects, Notices (Ctrl+K)"
+        >
+          <Search className="w-4 h-4" />
+          <span className="hidden md:inline">Search...</span>
+          <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[0.6rem] font-mono font-bold rounded bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-faint)]">
+            Ctrl K
+          </kbd>
+        </button>
+
+        {/* Admin / CR Portal Button */}
+        <button
+          onClick={() => setIsUnlockAdminModalOpen(true)}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+            isAdmin
+              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25'
+              : 'bg-[var(--bg-card-subtle)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-indigo-500/10'
+          }`}
+          title={isAdmin ? 'CR Admin Mode Active — Click to manage portal' : 'Unlock CR Admin Moderation Privileges'}
+        >
+          {isAdmin ? <ShieldCheck className="w-4 h-4 text-emerald-500" /> : <ShieldAlert className="w-4 h-4 text-indigo-500" />}
+          <span className="hidden lg:inline">{isAdmin ? 'CR Admin' : 'Admin Portal'}</span>
+        </button>
 
         {/* Notifications Bell */}
         <button

@@ -9,6 +9,16 @@ import {
   Bell,
   Clock,
   Zap,
+  BookOpen,
+  GraduationCap,
+  ListTodo,
+  RotateCcw,
+  StickyNote,
+  Library,
+  Target,
+  BarChart3,
+  Activity,
+  Settings,
   Sparkles
 } from 'lucide-react';
 
@@ -30,7 +40,7 @@ interface NavSection {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
-  const { tasks, analytics, unreadAnnouncementsCount } = useTasks();
+  const { tasks, unreadAnnouncementsCount } = useTasks();
 
   const completedCount = tasks.filter(t => t.status === 'completed').length;
   const activeCount = tasks.filter(t => t.status !== 'completed').length;
@@ -42,15 +52,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'tasks', label: 'Active Tasks', icon: CheckSquare, badge: activeCount },
         { id: 'completed', label: 'Completed Tasks', icon: CheckCircle2, badge: completedCount || undefined },
-        { id: 'calendar', label: 'Calendar', icon: Calendar }
+        { id: 'calendar', label: 'Calendar Planner', icon: Calendar }
       ]
     },
     {
-      title: 'Academic & Focus',
+      title: 'Coursework & Schedule',
       items: [
         { id: 'timetable', label: 'Time Table', icon: Clock },
-        { id: 'announcements', label: 'Notice Board', icon: Bell, badge: unreadAnnouncementsCount || undefined },
-        { id: 'focus', label: 'Focus Mode', icon: Zap }
+        { id: 'subjects', label: 'Subjects', icon: BookOpen },
+        { id: 'exams', label: 'Exam Schedule', icon: GraduationCap },
+        { id: 'announcements', label: 'Notice Board', icon: Bell, badge: unreadAnnouncementsCount || undefined }
+      ]
+    },
+    {
+      title: 'Study & Learning Hub',
+      items: [
+        { id: 'focus', label: 'Focus Mode', icon: Zap },
+        { id: 'planner', label: 'Daily Planner', icon: ListTodo },
+        { id: 'revision', label: 'Revision Tracker', icon: RotateCcw },
+        { id: 'notes', label: 'Notes & Cards', icon: StickyNote },
+        { id: 'resources', label: 'Resource Library', icon: Library },
+        { id: 'goals', label: 'Academic Goals', icon: Target }
+      ]
+    },
+    {
+      title: 'Analytics & Settings',
+      items: [
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'activity', label: 'Activity Log', icon: Activity },
+        { id: 'settings', label: 'Settings', icon: Settings }
       ]
     }
   ];

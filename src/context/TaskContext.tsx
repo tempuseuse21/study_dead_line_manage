@@ -249,7 +249,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // ---- State ----
-  const [isSupabaseConnected, setIsSupabaseConnected] = useState<boolean>(() => supabaseService.isAvailable());
+  const [isSupabaseConnected, setIsSupabaseConnected] = useState<boolean>(false);
   const [tasks, setTasks] = useState<Task[]>(() => storage.get(StorageKeys.TASKS, INITIAL_TASKS));
   const [subjects, setSubjects] = useState<Subject[]>(() => {
     const raw = storage.get(StorageKeys.SUBJECTS, INITIAL_SUBJECTS);
@@ -440,65 +440,80 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const syncCloudData = async () => {
       try {
+        const isConnected = await supabaseService.verifyConnection();
+        if (!isConnected) {
+          if (isMounted) setIsSupabaseConnected(false);
+          await fetchCentralData();
+          return;
+        }
+
         // Fetch Subjects
         let cloudSubjects = await supabaseService.fetchSubjects();
-        if (cloudSubjects.length === 0) {
-          for (const s of INITIAL_SUBJECTS) await supabaseService.upsertSubject(s);
-          cloudSubjects = INITIAL_SUBJECTS;
+        if (cloudSubjects !== null) {
+          if (cloudSubjects.length === 0) {
+            for (const s of INITIAL_SUBJECTS) await supabaseService.upsertSubject(s);
+            cloudSubjects = INITIAL_SUBJECTS;
+          }
+          if (isMounted) setSubjects(cloudSubjects);
         }
-        if (isMounted) setSubjects(cloudSubjects);
 
         // Fetch Tasks
         let cloudTasks = await supabaseService.fetchTasks();
-        if (cloudTasks.length === 0) {
-          for (const t of INITIAL_TASKS) await supabaseService.upsertTask(t);
-          cloudTasks = INITIAL_TASKS;
+        if (cloudTasks !== null) {
+          if (cloudTasks.length === 0) {
+            for (const t of INITIAL_TASKS) await supabaseService.upsertTask(t);
+            cloudTasks = INITIAL_TASKS;
+          }
+          if (isMounted) setTasks(cloudTasks);
         }
-        if (isMounted) setTasks(cloudTasks);
 
         // Fetch Timetable Slots
         let cloudTimetable = await supabaseService.fetchTimetableSlots();
-        if (cloudTimetable.length === 0) {
-          for (const slot of INITIAL_TIMETABLE_SLOTS) await supabaseService.upsertTimetableSlot(slot);
-          cloudTimetable = INITIAL_TIMETABLE_SLOTS;
+        if (cloudTimetable !== null) {
+          if (cloudTimetable.length === 0) {
+            for (const slot of INITIAL_TIMETABLE_SLOTS) await supabaseService.upsertTimetableSlot(slot);
+            cloudTimetable = INITIAL_TIMETABLE_SLOTS;
+          }
+          if (isMounted) setTimetableSlots(cloudTimetable);
         }
-        if (isMounted) setTimetableSlots(cloudTimetable);
 
         // Fetch Exams
         const cloudExams = await supabaseService.fetchExams();
-        if (isMounted) setExams(cloudExams);
+        if (cloudExams && isMounted) setExams(cloudExams);
 
         // Fetch Goals
         const cloudGoals = await supabaseService.fetchGoals();
-        if (isMounted) setGoals(cloudGoals);
+        if (cloudGoals && isMounted) setGoals(cloudGoals);
 
         // Fetch Notes
         const cloudNotes = await supabaseService.fetchNotes();
-        if (isMounted) setNotes(cloudNotes);
+        if (cloudNotes && isMounted) setNotes(cloudNotes);
 
         // Fetch Resources
         const cloudResources = await supabaseService.fetchResources();
-        if (isMounted) setResources(cloudResources);
+        if (cloudResources && isMounted) setResources(cloudResources);
 
         // Fetch Revision Topics
         const cloudRevision = await supabaseService.fetchRevisionTopics();
-        if (isMounted) setRevisionTopics(cloudRevision);
+        if (cloudRevision && isMounted) setRevisionTopics(cloudRevision);
 
         // Fetch Announcements
         const cloudAnnouncements = await supabaseService.fetchAnnouncements();
-        if (isMounted) setAnnouncements(cloudAnnouncements);
+        if (cloudAnnouncements !== null && isMounted) setAnnouncements(cloudAnnouncements);
 
         // Fetch Daily Plans
         const cloudDailyPlans = await supabaseService.fetchDailyPlans();
-        if (isMounted) setDailyPlans(cloudDailyPlans);
+        if (cloudDailyPlans && isMounted) setDailyPlans(cloudDailyPlans);
 
         // Fetch Focus Sessions
         const cloudFocus = await supabaseService.fetchFocusSessions();
-        if (isMounted) setFocusSessions(cloudFocus);
+        if (cloudFocus && isMounted) setFocusSessions(cloudFocus);
 
         if (isMounted) setIsSupabaseConnected(true);
       } catch (err) {
-        console.error('Supabase initial fetch error:', err);
+        console.warn('Supabase initial fetch failed, using local database:', err);
+        if (isMounted) setIsSupabaseConnected(false);
+        await fetchCentralData();
       }
     };
 
@@ -512,27 +527,27 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Subscribe to realtime postgres updates across all 11 tables
     const unsubTasks = supabaseService.subscribeToChanges('tasks', async () => {
       const updated = await supabaseService.fetchTasks();
-      if (isMounted) setTasks(updated);
+      if (updated && isMounted) setTasks(updated);
     });
 
     const unsubSubjects = supabaseService.subscribeToChanges('subjects', async () => {
       const updated = await supabaseService.fetchSubjects();
-      if (isMounted) setSubjects(updated);
+      if (updated && isMounted) setSubjects(updated);
     });
 
     const unsubTimetable = supabaseService.subscribeToChanges('timetable_slots', async () => {
       const updated = await supabaseService.fetchTimetableSlots();
-      if (isMounted) setTimetableSlots(updated);
+      if (updated && isMounted) setTimetableSlots(updated);
     });
 
     const unsubExams = supabaseService.subscribeToChanges('exams', async () => {
       const updated = await supabaseService.fetchExams();
-      if (isMounted) setExams(updated);
+      if (updated && isMounted) setExams(updated);
     });
 
     const unsubGoals = supabaseService.subscribeToChanges('goals', async () => {
       const updated = await supabaseService.fetchGoals();
-      if (isMounted) setGoals(updated);
+      if (updated && isMounted) setGoals(updated);
     });
 
     const unsubNotes = supabaseService.subscribeToChanges('notes', async () => {
@@ -1189,6 +1204,11 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (supabaseService.isAvailable()) {
             supabaseService.upsertSubject(updated);
           }
+          fetch(`/api/subjects/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated)
+          }).catch(() => {});
           return updated;
         }
         return s;

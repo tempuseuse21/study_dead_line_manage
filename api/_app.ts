@@ -1,16 +1,6 @@
 import express from 'express';
 import { GoogleGenAI } from '@google/genai';
-import {
-  INITIAL_ACTIVITY,
-  INITIAL_NOTIFICATIONS,
-  INITIAL_NOTIFICATION_PREFERENCES,
-  INITIAL_SUBJECTS,
-  INITIAL_TASKS,
-  INITIAL_ANNOUNCEMENTS,
-  INITIAL_TIMETABLE_SLOTS,
-  getInitialExams,
-  getInitialGoals
-} from '../src/lib/initialData.js';
+import { loadDatabase, saveDatabase } from './database.js';
 import {
   ActivityLog,
   AppNotification,
@@ -27,53 +17,73 @@ import {
   DailyPlan
 } from '../src/types.js';
 
-// In-Memory Database Store
-let subjects: Subject[] = JSON.parse(JSON.stringify(INITIAL_SUBJECTS));
-let tasks: Task[] = JSON.parse(JSON.stringify(INITIAL_TASKS));
-let notifications: AppNotification[] = JSON.parse(JSON.stringify(INITIAL_NOTIFICATIONS));
-let activities: ActivityLog[] = JSON.parse(JSON.stringify(INITIAL_ACTIVITY));
-let announcements: ClassAnnouncement[] = JSON.parse(JSON.stringify(INITIAL_ANNOUNCEMENTS));
-let timetableSlots: TimetableSlot[] = JSON.parse(JSON.stringify(INITIAL_TIMETABLE_SLOTS));
-let exams: Exam[] = JSON.parse(JSON.stringify(getInitialExams()));
-let goals: Goal[] = JSON.parse(JSON.stringify(getInitialGoals()));
-let notes: Note[] = [];
-let resources: Resource[] = [];
-let revisionTopics: RevisionTopic[] = [];
-let dailyPlans: DailyPlan[] = [];
-let focusSessions: FocusSession[] = [];
-let notificationPreferences = { ...INITIAL_NOTIFICATION_PREFERENCES };
+// Load persistent local database from disk
+const db = loadDatabase();
+const persist = () => saveDatabase(db);
 
 export const app = express();
 
 app.use(express.json({ limit: '10mb' }));
 
-// --- API Endpoints ---
+// --- Health API ---
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), persistence: 'disk_json' });
 });
 
-// Subjects API (5 Subjects only)
+// --- Subjects API ---
 app.get('/api/subjects', (req, res) => {
-  res.json(subjects);
+  res.json(db.subjects);
 });
 
-// Tasks API
+app.post('/api/subjects', (req, res) => {
+  const subjectData: Subject = req.body;
+  const idx = db.subjects.findIndex(s => s.id === subjectData.id);
+  if (idx !== -1) {
+    db.subjects[idx] = { ...db.subjects[idx], ...subjectData, updatedAt: new Date().toISOString() };
+  } else {
+    db.subjects.push(subjectData);
+  }
+  persist();
+  res.json({ success: true, subject: subjectData });
+});
+
+app.put('/api/subjects/:id', (req, res) => {
+  const { id } = req.params;
+  const idx = db.subjects.findIndex(s => s.id === id);
+  if (idx !== -1) {
+    db.subjects[idx] = { ...db.subjects[idx], ...req.body, updatedAt: new Date().toISOString() };
+    persist();
+    res.json({ success: true, subject: db.subjects[idx] });
+  } else {
+    res.status(404).json({ error: 'Subject not found' });
+  }
+});
+
+app.delete('/api/subjects/:id', (req, res) => {
+  const { id } = req.params;
+  db.subjects = db.subjects.filter(s => s.id !== id);
+  persist();
+  res.json({ success: true });
+});
+
+// --- Tasks API ---
 app.get('/api/tasks', (req, res) => {
-  const populatedTasks = tasks.map(t => ({
+  const populatedTasks = db.tasks.map(t => ({
     ...t,
-    subject: subjects.find(s => s.id === t.subjectId)
+    subject: db.subjects.find(s => s.id === t.subjectId)
   }));
   res.json(populatedTasks);
 });
 
 app.post('/api/tasks', (req, res) => {
   const taskData = req.body;
+  const taskId = taskData.id || `task_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
   const newTask: Task = {
     ...taskData,
-    id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-    createdById: 'student',
-    createdByName: 'Student',
-    assignedToIds: ['all'],
+    id: taskId,
+    createdById: taskData.createdById || 'student',
+    createdByName: taskData.createdByName || 'Student',
+    assignedToIds: taskData.assignedToIds || ['all'],
     progress: taskData.progress ?? 0,
     status: taskData.status || 'not_started',
     subtasks: taskData.subtasks || [],
@@ -84,36 +94,42 @@ app.post('/api/tasks', (req, res) => {
       { id: `rem_${Date.now()}_1`, type: '1_day', minutesBefore: 1440, label: '1 day before', enabled: true }
     ],
     tags: taskData.tags || ['Assignment'],
-    createdAt: new Date().toISOString(),
+    createdAt: taskData.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
 
-  tasks.unshift(newTask);
+  const existingIdx = db.tasks.findIndex(t => t.id === taskId);
+  if (existingIdx !== -1) {
+    db.tasks[existingIdx] = newTask;
+  } else {
+    db.tasks.unshift(newTask);
+  }
 
   const newActivity: ActivityLog = {
     id: `act_${Date.now()}`,
-    userId: 'student',
-    userName: 'Student',
+    userId: newTask.createdById || 'student',
+    userName: newTask.createdByName || 'Student',
     action: 'created task',
     targetType: 'task',
     targetId: newTask.id,
     targetTitle: newTask.title,
     timestamp: new Date().toISOString()
   };
-  activities.unshift(newActivity);
+  db.activities.unshift(newActivity);
+  persist();
 
-  res.json({ success: true, task: { ...newTask, subject: subjects.find(s => s.id === newTask.subjectId) } });
+  res.json({ success: true, task: { ...newTask, subject: db.subjects.find(s => s.id === newTask.subjectId) } });
 });
 
 app.put('/api/tasks/:id', (req, res) => {
   const taskId = req.params.id;
-  const taskIndex = tasks.findIndex(t => t.id === taskId);
+  const taskIndex = db.tasks.findIndex(t => t.id === taskId);
   if (taskIndex === -1) {
     return res.status(404).json({ error: 'Task not found' });
   }
 
-  const prevTask = tasks[taskIndex];
-  const updated = {
+  const prevTask = db.tasks[taskIndex];
+  const updated: Task = {
     ...prevTask,
     ...req.body,
     updatedAt: new Date().toISOString()
@@ -124,20 +140,22 @@ app.put('/api/tasks/:id', (req, res) => {
     updated.progress = 100;
   }
 
-  tasks[taskIndex] = updated;
-  res.json({ success: true, task: { ...updated, subject: subjects.find(s => s.id === updated.subjectId) } });
+  db.tasks[taskIndex] = updated;
+  persist();
+  res.json({ success: true, task: { ...updated, subject: db.subjects.find(s => s.id === updated.subjectId) } });
 });
 
 app.delete('/api/tasks/:id', (req, res) => {
   const taskId = req.params.id;
-  tasks = tasks.filter(t => t.id !== taskId);
+  db.tasks = db.tasks.filter(t => t.id !== taskId);
+  persist();
   res.json({ success: true });
 });
 
 // Toggle Subtask
 app.post('/api/tasks/:id/subtasks/:subtaskId/toggle', (req, res) => {
   const { id, subtaskId } = req.params;
-  const task = tasks.find(t => t.id === id);
+  const task = db.tasks.find(t => t.id === id);
   if (!task) return res.status(404).json({ error: 'Task not found' });
 
   const subtask = task.subtasks.find(st => st.id === subtaskId);
@@ -158,14 +176,15 @@ app.post('/api/tasks/:id/subtasks/:subtaskId/toggle', (req, res) => {
   }
 
   task.updatedAt = new Date().toISOString();
-  res.json({ success: true, task: { ...task, subject: subjects.find(s => s.id === task.subjectId) } });
+  persist();
+  res.json({ success: true, task: { ...task, subject: db.subjects.find(s => s.id === task.subjectId) } });
 });
 
 // Add Comment
 app.post('/api/tasks/:id/comments', (req, res) => {
   const { id } = req.params;
   const { content } = req.body;
-  const task = tasks.find(t => t.id === id);
+  const task = db.tasks.find(t => t.id === id);
   if (!task) return res.status(404).json({ error: 'Task not found' });
 
   const newComment = {
@@ -173,59 +192,101 @@ app.post('/api/tasks/:id/comments', (req, res) => {
     taskId: id,
     userId: 'student',
     userName: 'Classmate',
-    content: content.trim(),
+    content: (content || '').trim(),
     createdAt: new Date().toISOString()
   };
 
   task.comments = task.comments || [];
   task.comments.push(newComment);
   task.updatedAt = new Date().toISOString();
+  persist();
 
   res.json({ success: true, comment: newComment, task });
 });
 
-// Announcements API
+// --- Announcements API ---
 app.get('/api/announcements', (req, res) => {
-  res.json(announcements);
+  res.json(db.announcements);
 });
 
-// Notifications API
+app.post('/api/announcements', (req, res) => {
+  const annData = req.body;
+  const newAnn: ClassAnnouncement = {
+    ...annData,
+    id: annData.id || `ann_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    createdAt: annData.createdAt || new Date().toISOString()
+  };
+  const existingIdx = db.announcements.findIndex(a => a.id === newAnn.id);
+  if (existingIdx !== -1) {
+    db.announcements[existingIdx] = newAnn;
+  } else {
+    db.announcements.unshift(newAnn);
+  }
+  persist();
+  res.json({ success: true, announcement: newAnn });
+});
+
+app.delete('/api/announcements/:id', (req, res) => {
+  const { id } = req.params;
+  db.announcements = db.announcements.filter(a => a.id !== id);
+  persist();
+  res.json({ success: true });
+});
+
+// --- Notifications API ---
 app.get('/api/notifications', (req, res) => {
-  res.json(notifications);
+  res.json(db.notifications);
+});
+
+app.post('/api/notifications', (req, res) => {
+  const notif: AppNotification = req.body;
+  const newNotif = {
+    ...notif,
+    id: notif.id || `notif_${Date.now()}`,
+    scheduledAt: notif.scheduledAt || new Date().toISOString(),
+    sentAt: notif.sentAt || new Date().toISOString(),
+    isRead: false
+  };
+  db.notifications.unshift(newNotif);
+  persist();
+  res.json({ success: true, notification: newNotif });
 });
 
 app.post('/api/notifications/:id/read', (req, res) => {
   const { id } = req.params;
-  const notif = notifications.find(n => n.id === id);
+  const notif = db.notifications.find(n => n.id === id);
   if (notif) {
     notif.isRead = true;
     notif.readAt = new Date().toISOString();
+    persist();
   }
   res.json({ success: true });
 });
 
 app.post('/api/notifications/read-all', (req, res) => {
-  notifications.forEach(n => {
+  db.notifications.forEach(n => {
     n.isRead = true;
     n.readAt = new Date().toISOString();
   });
+  persist();
   res.json({ success: true });
 });
 
 app.delete('/api/notifications/:id', (req, res) => {
   const { id } = req.params;
-  notifications = notifications.filter(n => n.id !== id);
+  db.notifications = db.notifications.filter(n => n.id !== id);
+  persist();
   res.json({ success: true });
 });
 
-// Activity API
+// --- Activity API ---
 app.get('/api/activity', (req, res) => {
-  res.json(activities.slice(0, 30));
+  res.json(db.activities.slice(0, 30));
 });
 
-// Focus Sessions API
+// --- Focus Sessions API ---
 app.get('/api/focus-sessions', (req, res) => {
-  res.json(focusSessions);
+  res.json(db.focusSessions);
 });
 
 app.post('/api/focus-sessions', (req, res) => {
@@ -240,19 +301,21 @@ app.post('/api/focus-sessions', (req, res) => {
     startedAt: new Date(Date.now() - (durationMinutes || 25) * 60000).toISOString(),
     completedAt: new Date().toISOString()
   };
-  focusSessions.unshift(session);
+  db.focusSessions.unshift(session);
+  persist();
   res.json({ success: true, session });
 });
-// Timetable API (Shared master timetable across all users)
+
+// --- Timetable API ---
 app.get('/api/timetable', (req, res) => {
-  res.json(timetableSlots);
+  res.json(db.timetableSlots);
 });
 
 app.post('/api/timetable', (req, res) => {
   const slotData = req.body;
   let prof = slotData.professor;
   if (!prof && slotData.subjectId) {
-    const sub = subjects.find(s => s.id === slotData.subjectId);
+    const sub = db.subjects.find(s => s.id === slotData.subjectId);
     if (sub) prof = sub.professor || sub.teacherName;
   }
   const slotId = slotData.id || `tt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
@@ -262,145 +325,222 @@ app.post('/api/timetable', (req, res) => {
     professor: prof || ''
   };
 
-  const existingIdx = timetableSlots.findIndex(s => s.id === slotId);
+  const existingIdx = db.timetableSlots.findIndex(s => s.id === slotId);
   if (existingIdx !== -1) {
-    timetableSlots[existingIdx] = newSlot;
+    db.timetableSlots[existingIdx] = newSlot;
   } else {
-    timetableSlots.push(newSlot);
+    db.timetableSlots.push(newSlot);
   }
+  persist();
 
-  res.json({ success: true, slot: newSlot, slots: timetableSlots });
+  res.json({ success: true, slot: newSlot, slots: db.timetableSlots });
 });
 
 app.put('/api/timetable/:id', (req, res) => {
   const { id } = req.params;
-  const index = timetableSlots.findIndex(s => s.id === id);
+  const index = db.timetableSlots.findIndex(s => s.id === id);
   if (index === -1) {
     const slotData = req.body;
     const newSlot = { ...slotData, id };
-    timetableSlots.push(newSlot);
-    return res.json({ success: true, slot: newSlot, slots: timetableSlots });
+    db.timetableSlots.push(newSlot);
+    persist();
+    return res.json({ success: true, slot: newSlot, slots: db.timetableSlots });
   }
-  const updatedSlot = { ...timetableSlots[index], ...req.body };
-  timetableSlots[index] = updatedSlot;
-  res.json({ success: true, slot: updatedSlot, slots: timetableSlots });
+  const updatedSlot = { ...db.timetableSlots[index], ...req.body };
+  db.timetableSlots[index] = updatedSlot;
+  persist();
+  res.json({ success: true, slot: updatedSlot, slots: db.timetableSlots });
 });
 
 app.delete('/api/timetable/:id', (req, res) => {
   const { id } = req.params;
-  timetableSlots = timetableSlots.filter(s => s.id !== id);
-  res.json({ success: true, slots: timetableSlots });
+  db.timetableSlots = db.timetableSlots.filter(s => s.id !== id);
+  persist();
+  res.json({ success: true, slots: db.timetableSlots });
 });
 
 // Bulk timetable update
 app.put('/api/timetable', (req, res) => {
   if (Array.isArray(req.body)) {
-    timetableSlots = req.body;
+    db.timetableSlots = req.body;
+    persist();
   }
-  res.json({ success: true, slots: timetableSlots });
+  res.json({ success: true, slots: db.timetableSlots });
 });
 
-// Exams API
-app.get('/api/exams', (req, res) => res.json(exams));
+// --- Exams API ---
+app.get('/api/exams', (req, res) => res.json(db.exams));
+
 app.post('/api/exams', (req, res) => {
-  const newExam: Exam = { ...req.body, id: req.body.id || `exam_${Date.now()}` };
-  exams.unshift(newExam);
+  const exam = req.body;
+  const id = exam.id || `exam_${Date.now()}`;
+  const newExam: Exam = { ...exam, id, createdAt: exam.createdAt || new Date().toISOString() };
+  const idx = db.exams.findIndex(e => e.id === id);
+  if (idx !== -1) db.exams[idx] = newExam;
+  else db.exams.push(newExam);
+  persist();
   res.json({ success: true, exam: newExam });
 });
+
 app.put('/api/exams/:id', (req, res) => {
   const { id } = req.params;
-  const idx = exams.findIndex(e => e.id === id);
-  if (idx !== -1) exams[idx] = { ...exams[idx], ...req.body };
-  res.json({ success: true, exam: exams[idx] });
+  const idx = db.exams.findIndex(e => e.id === id);
+  if (idx !== -1) {
+    db.exams[idx] = { ...db.exams[idx], ...req.body, updatedAt: new Date().toISOString() };
+    persist();
+    res.json({ success: true, exam: db.exams[idx] });
+  } else {
+    res.status(404).json({ error: 'Exam not found' });
+  }
 });
+
 app.delete('/api/exams/:id', (req, res) => {
-  exams = exams.filter(e => e.id !== req.params.id);
+  db.exams = db.exams.filter(e => e.id !== req.params.id);
+  persist();
   res.json({ success: true });
 });
 
-// Goals API
-app.get('/api/goals', (req, res) => res.json(goals));
+// --- Goals API ---
+app.get('/api/goals', (req, res) => res.json(db.goals));
+
 app.post('/api/goals', (req, res) => {
-  const newGoal: Goal = { ...req.body, id: req.body.id || `goal_${Date.now()}` };
-  goals.unshift(newGoal);
+  const goal = req.body;
+  const id = goal.id || `goal_${Date.now()}`;
+  const newGoal: Goal = { ...goal, id, createdAt: goal.createdAt || new Date().toISOString() };
+  const idx = db.goals.findIndex(g => g.id === id);
+  if (idx !== -1) db.goals[idx] = newGoal;
+  else db.goals.push(newGoal);
+  persist();
   res.json({ success: true, goal: newGoal });
 });
+
 app.put('/api/goals/:id', (req, res) => {
   const { id } = req.params;
-  const idx = goals.findIndex(g => g.id === id);
-  if (idx !== -1) goals[idx] = { ...goals[idx], ...req.body };
-  res.json({ success: true, goal: goals[idx] });
+  const idx = db.goals.findIndex(g => g.id === id);
+  if (idx !== -1) {
+    db.goals[idx] = { ...db.goals[idx], ...req.body, updatedAt: new Date().toISOString() };
+    persist();
+    res.json({ success: true, goal: db.goals[idx] });
+  } else {
+    res.status(404).json({ error: 'Goal not found' });
+  }
 });
+
 app.delete('/api/goals/:id', (req, res) => {
-  goals = goals.filter(g => g.id !== req.params.id);
+  db.goals = db.goals.filter(g => g.id !== req.params.id);
+  persist();
   res.json({ success: true });
 });
 
-// Notes API
-app.get('/api/notes', (req, res) => res.json(notes));
+// --- Notes API ---
+app.get('/api/notes', (req, res) => res.json(db.notes));
+
 app.post('/api/notes', (req, res) => {
-  const newNote: Note = { ...req.body, id: req.body.id || `note_${Date.now()}` };
-  notes.unshift(newNote);
+  const note = req.body;
+  const id = note.id || `note_${Date.now()}`;
+  const newNote: Note = { ...note, id, createdAt: note.createdAt || new Date().toISOString() };
+  const idx = db.notes.findIndex(n => n.id === id);
+  if (idx !== -1) db.notes[idx] = newNote;
+  else db.notes.unshift(newNote);
+  persist();
   res.json({ success: true, note: newNote });
 });
+
 app.put('/api/notes/:id', (req, res) => {
   const { id } = req.params;
-  const idx = notes.findIndex(n => n.id === id);
-  if (idx !== -1) notes[idx] = { ...notes[idx], ...req.body };
-  res.json({ success: true, note: notes[idx] });
+  const idx = db.notes.findIndex(n => n.id === id);
+  if (idx !== -1) {
+    db.notes[idx] = { ...db.notes[idx], ...req.body, updatedAt: new Date().toISOString() };
+    persist();
+    res.json({ success: true, note: db.notes[idx] });
+  } else {
+    res.status(404).json({ error: 'Note not found' });
+  }
 });
+
 app.delete('/api/notes/:id', (req, res) => {
-  notes = notes.filter(n => n.id !== req.params.id);
+  db.notes = db.notes.filter(n => n.id !== req.params.id);
+  persist();
   res.json({ success: true });
 });
 
-// Resources API
-app.get('/api/resources', (req, res) => res.json(resources));
+// --- Resources API ---
+app.get('/api/resources', (req, res) => res.json(db.resources));
+
 app.post('/api/resources', (req, res) => {
-  const newRes: Resource = { ...req.body, id: req.body.id || `res_${Date.now()}` };
-  resources.unshift(newRes);
+  const resItem = req.body;
+  const id = resItem.id || `res_${Date.now()}`;
+  const newRes: Resource = { ...resItem, id, createdAt: resItem.createdAt || new Date().toISOString() };
+  const idx = db.resources.findIndex(r => r.id === id);
+  if (idx !== -1) db.resources[idx] = newRes;
+  else db.resources.unshift(newRes);
+  persist();
   res.json({ success: true, resource: newRes });
 });
+
 app.put('/api/resources/:id', (req, res) => {
   const { id } = req.params;
-  const idx = resources.findIndex(r => r.id === id);
-  if (idx !== -1) resources[idx] = { ...resources[idx], ...req.body };
-  res.json({ success: true, resource: resources[idx] });
+  const idx = db.resources.findIndex(r => r.id === id);
+  if (idx !== -1) {
+    db.resources[idx] = { ...db.resources[idx], ...req.body, updatedAt: new Date().toISOString() };
+    persist();
+    res.json({ success: true, resource: db.resources[idx] });
+  } else {
+    res.status(404).json({ error: 'Resource not found' });
+  }
 });
+
 app.delete('/api/resources/:id', (req, res) => {
-  resources = resources.filter(r => r.id !== req.params.id);
+  db.resources = db.resources.filter(r => r.id !== req.params.id);
+  persist();
   res.json({ success: true });
 });
 
-// Revision Topics API
-app.get('/api/revision-topics', (req, res) => res.json(revisionTopics));
+// --- Revision Topics API ---
+app.get('/api/revision-topics', (req, res) => res.json(db.revisionTopics));
+
 app.post('/api/revision-topics', (req, res) => {
-  const newTopic: RevisionTopic = { ...req.body, id: req.body.id || `rev_${Date.now()}` };
-  revisionTopics.unshift(newTopic);
+  const topic = req.body;
+  const id = topic.id || `rev_${Date.now()}`;
+  const newTopic: RevisionTopic = { ...topic, id, createdAt: topic.createdAt || new Date().toISOString() };
+  const idx = db.revisionTopics.findIndex(r => r.id === id);
+  if (idx !== -1) db.revisionTopics[idx] = newTopic;
+  else db.revisionTopics.unshift(newTopic);
+  persist();
   res.json({ success: true, topic: newTopic });
 });
+
 app.put('/api/revision-topics/:id', (req, res) => {
   const { id } = req.params;
-  const idx = revisionTopics.findIndex(r => r.id === id);
-  if (idx !== -1) revisionTopics[idx] = { ...revisionTopics[idx], ...req.body };
-  res.json({ success: true, topic: revisionTopics[idx] });
+  const idx = db.revisionTopics.findIndex(r => r.id === id);
+  if (idx !== -1) {
+    db.revisionTopics[idx] = { ...db.revisionTopics[idx], ...req.body, updatedAt: new Date().toISOString() };
+    persist();
+    res.json({ success: true, topic: db.revisionTopics[idx] });
+  } else {
+    res.status(404).json({ error: 'Topic not found' });
+  }
 });
+
 app.delete('/api/revision-topics/:id', (req, res) => {
-  revisionTopics = revisionTopics.filter(r => r.id !== req.params.id);
+  db.revisionTopics = db.revisionTopics.filter(r => r.id !== req.params.id);
+  persist();
   res.json({ success: true });
 });
 
-// Daily Plans API
-app.get('/api/daily-plans', (req, res) => res.json(dailyPlans));
+// --- Daily Plans API ---
+app.get('/api/daily-plans', (req, res) => res.json(db.dailyPlans));
+
 app.post('/api/daily-plans', (req, res) => {
   const plan: DailyPlan = req.body;
-  const idx = dailyPlans.findIndex(p => p.date === plan.date);
-  if (idx !== -1) dailyPlans[idx] = plan;
-  else dailyPlans.unshift(plan);
+  const idx = db.dailyPlans.findIndex(p => p.date === plan.date);
+  if (idx !== -1) db.dailyPlans[idx] = plan;
+  else db.dailyPlans.unshift(plan);
+  persist();
   res.json({ success: true, plan });
 });
 
-// AI Task Breakdown Helper
+// --- AI Task Breakdown Helper ---
 app.post('/api/ai/breakdown', async (req, res) => {
   const { title, description, subjectName } = req.body;
   try {

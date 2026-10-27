@@ -121,21 +121,54 @@ const mapTaskToDb = (t: Partial<Task>): any => ({
   completed_at: t.completedAt
 });
 
+let isCloudReachable: boolean = true;
+
 export const supabaseService = {
+  // Verify real connectivity to Supabase
+  async verifyConnection(): Promise<boolean> {
+    if (!isSupabaseConfigured() || !supabase) {
+      isCloudReachable = false;
+      return false;
+    }
+    try {
+      const { error } = await supabase.from('subjects').select('id').limit(1);
+      if (error && (error.message?.includes('fetch failed') || error.code === 'PGRST301' || error.message?.includes('Failed to fetch'))) {
+        isCloudReachable = false;
+        return false;
+      }
+      isCloudReachable = true;
+      return true;
+    } catch {
+      isCloudReachable = false;
+      return false;
+    }
+  },
+
   // Check availability
   isAvailable(): boolean {
-    return isSupabaseConfigured() && supabase !== null;
+    return isSupabaseConfigured() && supabase !== null && isCloudReachable;
+  },
+
+  setReachable(status: boolean) {
+    isCloudReachable = status;
   },
 
   // --- Subjects ---
-  async fetchSubjects(): Promise<Subject[]> {
-    if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('subjects').select('*').order('created_at', { ascending: true });
-    if (error) {
-      console.error('Error fetching subjects from Supabase:', error);
-      return [];
+  async fetchSubjects(): Promise<Subject[] | null> {
+    if (!this.isAvailable()) return null;
+    try {
+      const { data, error } = await supabase!.from('subjects').select('*').order('created_at', { ascending: true });
+      if (error) {
+        console.warn('Error fetching subjects from Supabase:', error.message);
+        isCloudReachable = false;
+        return null;
+      }
+      return (data || []).map(mapSubjectFromDb);
+    } catch (e) {
+      console.warn('Network error reaching Supabase:', e);
+      isCloudReachable = false;
+      return null;
     }
-    return (data || []).map(mapSubjectFromDb);
   },
 
   async upsertSubject(subject: Subject): Promise<boolean> {
@@ -160,14 +193,21 @@ export const supabaseService = {
   },
 
   // --- Tasks ---
-  async fetchTasks(): Promise<Task[]> {
-    if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('tasks').select('*').order('created_at', { ascending: false });
-    if (error) {
-      console.error('Error fetching tasks from Supabase:', error);
-      return [];
+  async fetchTasks(): Promise<Task[] | null> {
+    if (!this.isAvailable()) return null;
+    try {
+      const { data, error } = await supabase!.from('tasks').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.warn('Error fetching tasks from Supabase:', error.message);
+        isCloudReachable = false;
+        return null;
+      }
+      return (data || []).map(mapTaskFromDb);
+    } catch (e) {
+      console.warn('Network error reaching Supabase:', e);
+      isCloudReachable = false;
+      return null;
     }
-    return (data || []).map(mapTaskFromDb);
   },
 
   async upsertTask(task: Task): Promise<boolean> {
@@ -366,27 +406,34 @@ export const supabaseService = {
   },
 
   // --- Timetable Slots ---
-  async fetchTimetableSlots(): Promise<TimetableSlot[]> {
-    if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('timetable_slots').select('*').order('created_at', { ascending: true });
-    if (error) {
-      console.error('Error fetching timetable slots from Supabase:', error);
-      return [];
+  async fetchTimetableSlots(): Promise<TimetableSlot[] | null> {
+    if (!this.isAvailable()) return null;
+    try {
+      const { data, error } = await supabase!.from('timetable_slots').select('*').order('created_at', { ascending: true });
+      if (error) {
+        console.warn('Error fetching timetable slots from Supabase:', error.message);
+        isCloudReachable = false;
+        return null;
+      }
+      return (data || []).map(row => ({
+        id: row.id,
+        day: row.day,
+        startTime: row.start_time,
+        endTime: row.end_time,
+        subjectId: row.subject_id,
+        subjectCode: row.subject_code,
+        subjectName: row.subject_name,
+        room: row.room || '',
+        professor: row.professor || '',
+        type: row.type || 'lecture',
+        color: row.color || '#3b82f6',
+        notes: row.notes || ''
+      }));
+    } catch (e) {
+      console.warn('Network error reaching Supabase:', e);
+      isCloudReachable = false;
+      return null;
     }
-    return (data || []).map(row => ({
-      id: row.id,
-      day: row.day,
-      startTime: row.start_time,
-      endTime: row.end_time,
-      subjectId: row.subject_id,
-      subjectCode: row.subject_code,
-      subjectName: row.subject_name,
-      room: row.room || '',
-      professor: row.professor || '',
-      type: row.type || 'lecture',
-      color: row.color || '#3b82f6',
-      notes: row.notes || ''
-    }));
   },
 
   async upsertTimetableSlot(slot: TimetableSlot): Promise<boolean> {
@@ -475,23 +522,33 @@ export const supabaseService = {
   },
 
   // --- Announcements ---
-  async fetchAnnouncements(): Promise<ClassAnnouncement[]> {
-    if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('announcements').select('*').order('created_at', { ascending: false });
-    if (error) return [];
-    return (data || []).map(row => ({
-      id: row.id,
-      title: row.title,
-      content: row.content,
-      authorName: row.author_name || 'Class Representative',
-      authorRole: row.author_role || 'CR',
-      subjectId: row.subject_id,
-      isPinned: Boolean(row.is_pinned),
-      priority: row.priority || 'normal',
-      createdAt: row.created_at,
-      expiresAt: row.expires_at,
-      isRead: Boolean(row.is_read)
-    }));
+  async fetchAnnouncements(): Promise<ClassAnnouncement[] | null> {
+    if (!this.isAvailable()) return null;
+    try {
+      const { data, error } = await supabase!.from('announcements').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.warn('Error fetching announcements from Supabase:', error.message);
+        isCloudReachable = false;
+        return null;
+      }
+      return (data || []).map(row => ({
+        id: row.id,
+        title: row.title,
+        content: row.content,
+        authorName: row.author_name || 'Class Representative',
+        authorRole: row.author_role || 'CR',
+        subjectId: row.subject_id,
+        isPinned: Boolean(row.is_pinned),
+        priority: row.priority || 'normal',
+        createdAt: row.created_at,
+        expiresAt: row.expires_at,
+        isRead: Boolean(row.is_read)
+      }));
+    } catch (e) {
+      console.warn('Network error reaching Supabase:', e);
+      isCloudReachable = false;
+      return null;
+    }
   },
 
   async upsertAnnouncement(ann: ClassAnnouncement): Promise<boolean> {

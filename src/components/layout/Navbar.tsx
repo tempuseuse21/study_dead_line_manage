@@ -38,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <header className="sticky top-0 z-30 flex w-full items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--glass-bg)] backdrop-blur-md px-3 sm:px-8 py-3.5 transition-all">
+    <header className="hidden lg:flex sticky top-0 z-30 w-full items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--glass-bg)] backdrop-blur-md px-3 sm:px-8 py-3.5 transition-all">
       {/* Brand Logo & Name */}
       <div
         onClick={() => onNavigate('dashboard')}

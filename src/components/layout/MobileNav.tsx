@@ -19,9 +19,19 @@ import {
   Target,
   BarChart3,
   Activity,
-  Settings
+  Settings,
+  Search,
+  Sun,
+  Moon,
+  ShieldCheck,
+  ShieldAlert,
+  LogOut,
+  LogIn,
+  Sparkles
 } from 'lucide-react';
 import { useTasks } from '../../context/TaskContext';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface MobileNavProps {
   activeView: string;
@@ -29,11 +39,23 @@ interface MobileNavProps {
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({ activeView, onNavigate }) => {
-  const { setIsCreateTaskModalOpen, tasks, unreadAnnouncementsCount } = useTasks();
+  const {
+    setIsCreateTaskModalOpen,
+    tasks,
+    unreadAnnouncementsCount,
+    notifications,
+    setIsNotificationDrawerOpen,
+    setIsSearchModalOpen,
+    setIsUnlockAdminModalOpen,
+    isAdmin
+  } = useTasks();
+  const { user, logout, setShowAuthModal, setAuthMode } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   const completedCount = tasks.filter(t => t.status === 'completed').length;
   const activeCount = tasks.filter(t => t.status !== 'completed').length;
+  const unreadNotificationsCount = notifications.filter(n => !n.isRead).length;
 
   const leftNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -67,21 +89,135 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeView, onNavigate }) 
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="w-full bg-[var(--bg-card)] border-t border-[var(--border-subtle)] rounded-t-3xl p-5 space-y-4 animate-in slide-in-from-bottom duration-200 shadow-2xl"
+            className="w-full bg-[var(--bg-card)] border-t border-[var(--border-subtle)] rounded-t-3xl p-5 space-y-4 animate-in slide-in-from-bottom duration-200 shadow-2xl max-h-[85vh] overflow-y-auto"
           >
+            {/* Sheet Header */}
             <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
-              <h3 className="font-display text-base font-bold text-[var(--text-main)]">
-                Navigation Menu
-              </h3>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg gradient-brand-bg flex items-center justify-center text-white">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <h3 className="font-display text-base font-bold text-[var(--text-main)]">
+                  Menu & Quick Tools
+                </h3>
+              </div>
               <button
                 onClick={() => setShowMoreMenu(false)}
-                className="p-1.5 rounded-xl bg-[var(--bg-card-subtle)] text-[var(--text-muted)]"
+                className="p-1.5 rounded-xl bg-[var(--bg-card-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 gap-2">
+            {/* Student Profile Card & Logout */}
+            <div className="p-3.5 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] flex items-center justify-between">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-600/15 border border-indigo-500/25 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
+                      {user.fullName.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-[var(--text-main)] leading-snug">
+                        {user.fullName}
+                      </div>
+                      <div className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
+                        Roll: {user.studentId}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setShowMoreMenu(false);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold text-xs hover:bg-rose-500/20 transition-all cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Logout</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    setAuthMode('login');
+                    setShowAuthModal(true);
+                    setShowMoreMenu(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl gradient-brand-bg text-white font-bold text-xs"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Log In to Portal</span>
+                </button>
+              )}
+            </div>
+
+            {/* Quick Actions Grid: Search, Notifications, Theme, Admin */}
+            <div className="grid grid-cols-4 gap-2">
+              {/* Search */}
+              <button
+                onClick={() => {
+                  setIsSearchModalOpen(true);
+                  setShowMoreMenu(false);
+                }}
+                className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] hover:border-indigo-500/30 text-[var(--text-main)] transition-all cursor-pointer"
+              >
+                <Search className="w-4 h-4 mb-1 text-indigo-500" />
+                <span className="text-[10px] font-semibold">Search</span>
+              </button>
+
+              {/* Notifications */}
+              <button
+                onClick={() => {
+                  setIsNotificationDrawerOpen(true);
+                  setShowMoreMenu(false);
+                }}
+                className="relative flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] hover:border-indigo-500/30 text-[var(--text-main)] transition-all cursor-pointer"
+              >
+                <Bell className="w-4 h-4 mb-1 text-amber-500" />
+                <span className="text-[10px] font-semibold">Alerts</span>
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute top-1 right-2 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold font-mono flex items-center justify-center">
+                    {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Theme Switcher */}
+              <button
+                onClick={toggleTheme}
+                className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] hover:border-indigo-500/30 text-[var(--text-main)] transition-all cursor-pointer"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4 mb-1 text-amber-400" />
+                ) : (
+                  <Moon className="w-4 h-4 mb-1 text-indigo-600" />
+                )}
+                <span className="text-[10px] font-semibold">{theme === 'dark' ? 'Light' : 'Dark'}</span>
+              </button>
+
+              {/* CR Admin */}
+              <button
+                onClick={() => {
+                  setIsUnlockAdminModalOpen(true);
+                  setShowMoreMenu(false);
+                }}
+                className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] hover:border-emerald-500/30 text-[var(--text-main)] transition-all cursor-pointer"
+              >
+                {isAdmin ? (
+                  <ShieldCheck className="w-4 h-4 mb-1 text-emerald-500" />
+                ) : (
+                  <ShieldAlert className="w-4 h-4 mb-1 text-purple-500" />
+                )}
+                <span className="text-[10px] font-semibold">{isAdmin ? 'CR Admin' : 'Admin'}</span>
+              </button>
+            </div>
+
+            {/* Navigation Links */}
+            <div className="grid grid-cols-1 gap-2 pt-1">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--text-faint)] px-1">
+                Academic Views
+              </span>
               {moreMenuItems.map(item => {
                 const Icon = item.icon;
                 const isActive = activeView === item.id;

@@ -12,11 +12,17 @@ interface AuthContextType {
     password: string;
     confirmPassword: string;
   }) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (input: {
+    studentId: string;
+    registrationCode: string;
+    newPassword: string;
+    confirmPassword: string;
+  }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   showAuthModal: boolean;
   setShowAuthModal: (show: boolean) => void;
-  authMode: 'login' | 'register';
-  setAuthMode: (mode: 'login' | 'register') => void;
+  authMode: 'login' | 'register' | 'forgot_password';
+  setAuthMode: (mode: 'login' | 'register' | 'forgot_password') => void;
 }
 
 const CURRENT_USER_KEY = 'mscit_current_student';
@@ -91,6 +97,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const resetPassword = async (input: {
+    studentId: string;
+    registrationCode: string;
+    newPassword: string;
+    confirmPassword: string;
+  }) => {
+    const res = rosterService.resetPassword(input);
+    return res;
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem(CURRENT_USER_KEY);
@@ -104,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         loginStudent,
         registerStudent,
+        resetPassword,
         logout,
         showAuthModal,
         setShowAuthModal,

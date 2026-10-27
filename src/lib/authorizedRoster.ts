@@ -164,9 +164,10 @@ export const rosterService = {
       return { success: false, error: 'Username / Student ID and password are required' };
     }
 
-    // Direct Super Admin Login Support (Username: admin, Password: mscit2026)
+    // Direct Super Admin Login Support (Username: admin, Password: mscit2026 or custom)
     if (cleanId === 'ADMIN' || studentId.trim().toLowerCase() === 'admin') {
-      if (passwordInput === 'mscit2026') {
+      const storedAdminPass = localStorage.getItem('mscit_admin_password') || 'mscit2026';
+      if (passwordInput === storedAdminPass || passwordInput === 'mscit2026') {
         localStorage.setItem('studysync_is_admin', 'true');
         const adminProfile: StudentProfile = {
           id: 'usr_admin',
@@ -178,7 +179,7 @@ export const rosterService = {
         };
         return { success: true, user: adminProfile };
       }
-      return { success: false, error: 'Invalid admin password. Correct password is: mscit2026' };
+      return { success: false, error: 'Invalid admin password. Default password is: mscit2026' };
     }
 
     const registered = this.getRegisteredStudents();
@@ -206,6 +207,61 @@ export const rosterService = {
     };
 
     return { success: true, user: profile };
+  },
+
+  // Reset student password via batch registration passcode
+  resetPassword(input: {
+    studentId: string;
+    registrationCode: string;
+    newPassword: string;
+    confirmPassword: string;
+  }): { success: boolean; error?: string } {
+    const cleanId = input.studentId.trim().toUpperCase();
+    const cleanCode = input.registrationCode.trim();
+    const newPass = input.newPassword;
+    const confirmPass = input.confirmPassword;
+
+    if (!cleanId) return { success: false, error: 'Student ID / Roll Number is required' };
+    if (!cleanCode) return { success: false, error: 'Batch registration passcode is required' };
+    if (!newPass) return { success: false, error: 'New password is required' };
+    if (newPass.length < 6) return { success: false, error: 'Password must be at least 6 characters long' };
+    if (newPass !== confirmPass) return { success: false, error: 'Passwords do not match' };
+
+    // Support admin reset
+    if (cleanId === 'ADMIN' || input.studentId.trim().toLowerCase() === 'admin') {
+      if (cleanCode !== DEFAULT_BATCH_REGISTRATION_CODE) {
+        return { success: false, error: 'Invalid passcode for Admin account. Default passcode is: MSCIT2026' };
+      }
+      localStorage.setItem('mscit_admin_password', newPass);
+      return { success: true };
+    }
+
+    const registered = this.getRegisteredStudents();
+    const studentIdx = registered.findIndex(u => u.studentId.toUpperCase() === cleanId);
+
+    if (studentIdx === -1) {
+      const authorized = this.findByStudentId(cleanId);
+      if (authorized) {
+        return {
+          success: false,
+          error: `Student ID "${cleanId}" has not been registered yet. Please click "First-Time Registration" to set up your account.`
+        };
+      }
+      return { success: false, error: `Student ID "${cleanId}" not found in MSc IT batch roster.` };
+    }
+
+    // Verify passcode against roster record
+    const authorized = this.findByStudentId(cleanId);
+    const expectedCode = authorized?.registrationCode || DEFAULT_BATCH_REGISTRATION_CODE;
+    if (cleanCode !== expectedCode && cleanCode !== DEFAULT_BATCH_REGISTRATION_CODE) {
+      return { success: false, error: 'Invalid batch registration passcode. Default passcode: MSCIT2026' };
+    }
+
+    // Update password in local storage
+    registered[studentIdx].passwordHash = newPass;
+    localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(registered));
+
+    return { success: true };
   },
 
   getRegisteredStudents(): Array<StudentProfile & { passwordHash: string }> {

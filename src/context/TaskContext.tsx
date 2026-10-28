@@ -597,36 +597,12 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Live ticker every 10s & Auto-shift overdue tasks to Completed section
+  // Live ticker every 10s - refreshes time-based computations
+  // Overdue status is computed in filteredTasks from dueDate comparison; no state mutation here
   useEffect(() => {
     const interval = setInterval(() => setTicker(prev => prev + 1), 10000);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    const now = Date.now();
-    setTasks(prev => {
-      let hasChanges = false;
-      const updated = prev.map(t => {
-        if (t.status !== 'completed') {
-          const [h, m] = (t.dueTime || '23:59').split(':').map(Number);
-          const [y, mon, d] = t.dueDate.split('-').map(Number);
-          const taskTime = new Date(y, mon - 1, d, h || 23, m || 59).getTime();
-          if (taskTime < now) {
-            hasChanges = true;
-            return {
-              ...t,
-              status: 'completed' as TaskStatus,
-              progress: 100,
-              completedAt: t.completedAt || new Date().toISOString()
-            };
-          }
-        }
-        return t;
-      });
-      return hasChanges ? updated : prev;
-    });
-  }, [ticker]);
 
   // Broadcast events (multi-tab)
   useEffect(() => {
@@ -812,7 +788,9 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (filters.quickFilter === 'today' && (task.dueDate !== todayStr || task.status === 'completed')) return false;
         if (filters.quickFilter === 'tomorrow' && (task.dueDate !== tomorrowStr || task.status === 'completed')) return false;
         if (filters.quickFilter === 'this_week' && (task.dueDate < todayStr || task.dueDate > endOfWeekStr || task.status === 'completed')) return false;
-        if (filters.quickFilter === 'overdue' && !(task.status === 'overdue' || (task.dueDate < todayStr && task.status !== 'completed'))) return false;
+        if (filters.quickFilter === 'overdue' && !(
+          (task.status !== 'completed' && task.status !== 'cancelled' && task.dueDate < todayStr) || task.status === 'overdue'
+        )) return false;
         if (filters.quickFilter === 'high_priority' && (task.priority !== 'high' && task.priority !== 'urgent' || task.status === 'completed')) return false;
         if (filters.quickFilter === 'completed' && task.status !== 'completed') return false;
 

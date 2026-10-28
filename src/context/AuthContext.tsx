@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { rosterService, StudentProfile } from '../lib/authorizedRoster';
+
+export interface StudentProfile {
+  id: string;
+  studentId: string;
+  fullName: string;
+  email: string;
+  registeredAt: string;
+  role: 'student' | 'cr_admin';
+}
 
 interface AuthContextType {
   user: StudentProfile | null;
@@ -27,16 +35,6 @@ interface AuthContextType {
 
 const CURRENT_USER_KEY = 'mscit_current_student';
 
-// Default initial user for instant seamless experience
-const DEFAULT_STUDENT: StudentProfile = {
-  id: 'usr_202612045',
-  studentId: '202612045',
-  fullName: 'Mayank Malhotra',
-  email: '202612045@mscit.edu',
-  registeredAt: new Date().toISOString(),
-  role: 'student'
-};
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -47,13 +45,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.error('Failed to parse current student session:', e);
     }
-    // Return null so user is forced to log in before entering the site
     return null;
   });
 
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot_password'>('login');
 
+  // Sync user profile (no password) to localStorage for session persistence
   useEffect(() => {
     if (user) {
       localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
@@ -62,17 +60,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user]);
 
-  const loginStudent = async (studentId: string, passwordInput: string) => {
-    const res = rosterService.authenticate(studentId, passwordInput);
-    if (res.success && res.user) {
-      setUser(res.user);
-      if (res.user.role === 'cr_admin' || res.user.studentId === 'admin') {
-        localStorage.setItem('studysync_is_admin', 'true');
+  const loginStudent = async (studentId: string, passwordInput: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, password: passwordInput })
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        setUser(data.user);
+        if (data.user.role === 'cr_admin') localStorage.setItem('studysync_is_admin', 'true');
+        setShowAuthModal(false);
+        return { success: true };
       }
-      setShowAuthModal(false);
-      return { success: true };
+      return { success: false, error: data.error || 'Login failed' };
+    } catch {
+      return { success: false, error: 'Server connection failed. Make sure the app server is running.' };
     }
-    return { success: false, error: res.error || 'Authentication failed' };
   };
 
   const registerStudent = async (input: {
@@ -81,19 +86,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registrationCode: string;
     password: string;
     confirmPassword: string;
-  }) => {
-    const val = rosterService.validateRegistration(input);
-    if (!val.isValid) {
-      return { success: false, error: val.error };
+  }): Promise<{ success: boolean; error?: string }> => {
+    if (input.password !== input.confirmPassword) {
+      return { success: false, error: 'Passwords do not match' };
     }
-
     try {
-      const profile = rosterService.registerStudent(input.studentId, input.fullName, input.password);
-      setUser(profile);
-      setShowAuthModal(false);
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err instanceof Error ? err.message : 'Registration failed' };
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: input.studentId,
+          fullName: input.fullName,
+          registrationCode: input.registrationCode,
+          password: input.password
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        setUser(data.user);
+        setShowAuthModal(false);
+        return { success: true };
+      }
+      return { success: false, error: data.error || 'Registration failed' };
+    } catch {
+      return { success: false, error: 'Server connection failed.' };
     }
   };
 
@@ -102,9 +118,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registrationCode: string;
     newPassword: string;
     confirmPassword: string;
-  }) => {
-    const res = rosterService.resetPassword(input);
-    return res;
+  }): Promise<{ success: boolean; error?: string }> => {
+    if (input.newPassword !== input.confirmPassword) {
+      return { success: false, error: 'Passwords do not match' };
+    }
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: input.studentId,
+          registrationCode: input.registrationCode,
+          newPassword: input.newPassword
+        })
+      });
+      const data = await res.json();
+      return data;
+    } catch {
+      return { success: false, error: 'Server connection failed.' };
+    }
   };
 
   const logout = () => {

@@ -421,9 +421,58 @@ export function playNotificationChime(type: 'success' | 'warning' | 'alert' = 's
 export const playChimeSound = () => playNotificationChime('success');
 
 // ============================================================
-// ID Generation
+// ID Generation & Task Helpers
 // ============================================================
 
 export function generateId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+}
+
+export function parseTaskDeadlineMs(task: { dueDate?: string; dueTime?: string }): number {
+  try {
+    if (!task?.dueDate) return Infinity;
+    const parts = task.dueDate.split('-').map(Number);
+    if (parts.length !== 3 || parts.some(isNaN)) return Infinity;
+    const [y, mon, d] = parts;
+    const timeParts = (task.dueTime || '23:59').split(':').map(Number);
+    const hour = typeof timeParts[0] === 'number' && !isNaN(timeParts[0]) ? timeParts[0] : 23;
+    const min = typeof timeParts[1] === 'number' && !isNaN(timeParts[1]) ? timeParts[1] : 59;
+    return new Date(y, mon - 1, d, hour, min, 59, 999).getTime();
+  } catch {
+    return Infinity;
+  }
+}
+
+const DELETED_TASK_IDS_KEY = 'mscit_deleted_task_ids';
+
+export function getDeletedTaskIds(): Set<string> {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem(DELETED_TASK_IDS_KEY);
+      if (raw) return new Set(JSON.parse(raw));
+    }
+  } catch {}
+  return new Set();
+}
+
+export function markTaskIdDeleted(taskId: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const set = getDeletedTaskIds();
+      set.add(taskId);
+      localStorage.setItem(DELETED_TASK_IDS_KEY, JSON.stringify(Array.from(set)));
+    }
+  } catch {}
+}
+
+export function unmarkTaskIdDeleted(taskId: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const set = getDeletedTaskIds();
+      if (set.has(taskId)) {
+        set.delete(taskId);
+        localStorage.setItem(DELETED_TASK_IDS_KEY, JSON.stringify(Array.from(set)));
+      }
+    }
+  } catch {}
 }

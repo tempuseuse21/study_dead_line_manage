@@ -43,6 +43,16 @@ export interface DatabaseSchema {
   dailyPlans: DailyPlan[];
   focusSessions: FocusSession[];
   notificationPreferences: NotificationPreferences;
+  users: Array<{
+    id: string;
+    studentId: string;
+    fullName: string;
+    email: string;
+    passwordHash: string;
+    role: 'student' | 'cr_admin';
+    registeredAt: string;
+  }>;
+  adminPassword: string;
 }
 
 const DB_DIR = path.join(process.cwd(), 'data');
@@ -70,7 +80,9 @@ export function loadDatabase(): DatabaseSchema {
         revisionTopics: parsed.revisionTopics || [],
         dailyPlans: parsed.dailyPlans || [],
         focusSessions: parsed.focusSessions || [],
-        notificationPreferences: parsed.notificationPreferences || { ...INITIAL_NOTIFICATION_PREFERENCES }
+        notificationPreferences: parsed.notificationPreferences || { ...INITIAL_NOTIFICATION_PREFERENCES },
+        users: parsed.users || [],
+        adminPassword: parsed.adminPassword || 'mscit2026'
       };
     }
   } catch (err) {
@@ -91,7 +103,9 @@ export function loadDatabase(): DatabaseSchema {
     revisionTopics: [],
     dailyPlans: [],
     focusSessions: [],
-    notificationPreferences: { ...INITIAL_NOTIFICATION_PREFERENCES }
+    notificationPreferences: { ...INITIAL_NOTIFICATION_PREFERENCES },
+    users: [],
+    adminPassword: 'mscit2026'
   };
 
   saveDatabase(initialData);

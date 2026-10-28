@@ -30,6 +30,99 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), persistence: 'disk_json' });
 });
 
+// --- Auth API ---
+app.post('/api/auth/register', (req, res) => {
+  const { studentId, fullName, registrationCode, password } = req.body;
+  if (!studentId || !fullName || !registrationCode || !password) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  if (registrationCode !== 'MSCIT2026') {
+    return res.status(400).json({ error: 'Invalid registration code' });
+  }
+  const cleanId = String(studentId).trim();
+  const existingUser = db.users.find(u => u.studentId.toLowerCase() === cleanId.toLowerCase());
+  if (existingUser) {
+    return res.status(409).json({ error: 'Student ID already registered' });
+  }
+  const newUser = {
+    id: `usr_${cleanId.toLowerCase()}`,
+    studentId: cleanId,
+    fullName: String(fullName).trim(),
+    email: `${cleanId.toLowerCase()}@mscit.edu`,
+    passwordHash: password,
+    role: 'student' as const,
+    registeredAt: new Date().toISOString()
+  };
+  db.users.push(newUser);
+  persist();
+  const { passwordHash, ...safeUser } = newUser;
+  return res.json({ success: true, user: safeUser });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { studentId, password } = req.body;
+  if (!studentId || !password) {
+    return res.status(400).json({ error: 'Student ID and password are required' });
+  }
+  // Admin special case
+  if (String(studentId).toLowerCase() === 'admin') {
+    const adminPassword = db.adminPassword || 'mscit2026';
+    if (password === adminPassword) {
+      return res.json({
+        success: true,
+        user: {
+          id: 'usr_admin',
+          studentId: 'admin',
+          fullName: 'CR Admin',
+          email: 'admin@mscit.edu',
+          role: 'cr_admin',
+          registeredAt: new Date().toISOString()
+        }
+      });
+    }
+    return res.status(401).json({ error: 'Invalid admin password' });
+  }
+  // Regular user
+  const user = db.users.find(u => u.studentId.toLowerCase() === String(studentId).toLowerCase());
+  if (!user) {
+    return res.status(401).json({ error: 'Student ID not found. Please register first.' });
+  }
+  if (user.passwordHash !== password) {
+    return res.status(401).json({ error: 'Incorrect password' });
+  }
+  const { passwordHash, ...safeUser } = user;
+  return res.json({ success: true, user: safeUser });
+});
+
+app.post('/api/auth/reset-password', (req, res) => {
+  const { studentId, registrationCode, newPassword } = req.body;
+  if (!studentId || !registrationCode || !newPassword) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  if (registrationCode !== 'MSCIT2026') {
+    return res.status(400).json({ error: 'Invalid registration code' });
+  }
+  const user = db.users.find(u => u.studentId.toLowerCase() === String(studentId).toLowerCase());
+  if (!user) {
+    return res.status(404).json({ error: 'Student ID not found' });
+  }
+  user.passwordHash = newPassword;
+  persist();
+  return res.json({ success: true });
+});
+
+app.get('/api/auth/users', (req, res) => {
+  const safeUsers = db.users.map(u => ({
+    id: u.id,
+    studentId: u.studentId,
+    fullName: u.fullName,
+    email: u.email,
+    role: u.role,
+    registeredAt: u.registeredAt
+  }));
+  return res.json(safeUsers);
+});
+
 // --- Subjects API ---
 app.get('/api/subjects', (req, res) => {
   res.json(db.subjects);
@@ -125,7 +218,18 @@ app.put('/api/tasks/:id', (req, res) => {
   const taskId = req.params.id;
   const taskIndex = db.tasks.findIndex(t => t.id === taskId);
   if (taskIndex === -1) {
-    return res.status(404).json({ error: 'Task not found' });
+    const newTask: Task = {
+      ...req.body,
+      id: taskId,
+      updatedAt: new Date().toISOString()
+    };
+    if (newTask.status === 'completed' && !newTask.completedAt) {
+      newTask.completedAt = new Date().toISOString();
+      newTask.progress = 100;
+    }
+    db.tasks.unshift(newTask);
+    persist();
+    return res.json({ success: true, task: { ...newTask, subject: db.subjects.find(s => s.id === newTask.subjectId) } });
   }
 
   const prevTask = db.tasks[taskIndex];
@@ -136,7 +240,7 @@ app.put('/api/tasks/:id', (req, res) => {
   };
 
   if (updated.status === 'completed' && prevTask.status !== 'completed') {
-    updated.completedAt = new Date().toISOString();
+    updated.completedAt = updated.completedAt || new Date().toISOString();
     updated.progress = 100;
   }
 

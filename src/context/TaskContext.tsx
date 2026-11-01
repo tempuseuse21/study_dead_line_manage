@@ -21,6 +21,7 @@ import {
 } from '../lib/webNotifications';
 import { storage, StorageKeys } from '../services/storageService';
 import { supabaseService } from '../services/supabaseService';
+import { useAuth } from './AuthContext';
 import {
   ActivityLog,
   AppNotification,
@@ -219,6 +220,7 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined);
 // ============================================================
 
 export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAdmin: isAdmin } = useAuth();
 
   // Run migration on first mount & update professor names to user specified values
   useEffect(() => {
@@ -285,24 +287,17 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [isUnlockAdminModalOpen, setIsUnlockAdminModalOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => localStorage.getItem('studysync_is_admin') === 'true');
   const adminRole = 'Class Representative (CR)';
 
-  const loginAdmin = async (pin: string): Promise<{ success: boolean; message?: string }> => {
-    const p = pin.trim().toLowerCase();
-    if (p === 'mscit2026' || p === 'admin' || p === 'iamcr') {
-      setIsAdmin(true);
-      localStorage.setItem('studysync_is_admin', 'true');
-      logActivity('admin_login', 'Super Admin Mode Unlocked', 'system');
-      return { success: true };
-    }
-    return { success: false, message: 'Invalid Admin Password. Password: mscit2026' };
-  };
+  // Admin privileges come exclusively from the trusted Supabase app_metadata role.
+  // A local PIN or localStorage flag must never grant database write permissions.
+  const loginAdmin = async (_pin: string): Promise<{ success: boolean; message?: string }> => ({
+    success: isAdmin,
+    message: isAdmin ? undefined : 'Admin access requires a Supabase account with the trusted admin or cr role.'
+  });
 
   const logoutAdmin = () => {
-    setIsAdmin(false);
-    localStorage.removeItem('studysync_is_admin');
-    logActivity('admin_logout', 'CR Admin Mode Locked', 'system');
+    // Admin mode ends only when the Supabase Auth session is signed out.
   };
 
   const pinTask = (taskId: string) => {

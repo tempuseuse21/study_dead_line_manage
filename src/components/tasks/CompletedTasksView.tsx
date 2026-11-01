@@ -79,16 +79,7 @@ export const CompletedTasksView: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredCompletedTasks.map(task => (
-            <div key={task.id} className="relative group">
-              <TaskCard task={task} />
-              <div
-                className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold font-mono flex items-center gap-1 backdrop-blur-xs pointer-events-none"
-                title="Completed and Archived"
-              >
-                <Check className="w-3 h-3" />
-                <span>Archived</span>
-              </div>
-            </div>
+            <TaskCard key={task.id} task={task} />
           ))}
         </div>
       )}

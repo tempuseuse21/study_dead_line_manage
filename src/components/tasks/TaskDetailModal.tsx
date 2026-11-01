@@ -18,7 +18,9 @@ import {
   Code,
   GitFork,
   User,
-  Lock
+  Lock,
+  CheckCircle2,
+  Check
 } from 'lucide-react';
 import { formatLiveCountdown, getPriorityBadge, formatDateDisplay } from '../../lib/utils';
 import { Priority } from '../../types';
@@ -32,6 +34,7 @@ export const TaskDetailModal: React.FC = () => {
     selectedTask,
     setSelectedTask,
     updateTask,
+    toggleTaskComplete,
     addComment,
     subjects,
     isAdmin
@@ -52,11 +55,12 @@ export const TaskDetailModal: React.FC = () => {
     selectedTask.createdByName === user?.fullName
   );
 
+  const isCompleted = selectedTask.status === 'completed';
   const subject = subjects.find(s => s.id === selectedTask.subjectId);
   const countdown = formatLiveCountdown(
     selectedTask.dueDate,
     selectedTask.dueTime,
-    false
+    isCompleted
   );
   const priorityInfo = getPriorityBadge(selectedTask.priority);
 
@@ -116,6 +120,19 @@ export const TaskDetailModal: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => toggleTaskComplete(selectedTask.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                isCompleted
+                  ? 'bg-emerald-500 text-white shadow-xs hover:bg-emerald-600'
+                  : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+              }`}
+              title={isCompleted ? 'Completed! Click to reopen task' : 'Click to mark as completed'}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{isCompleted ? 'Completed (Reopen)' : 'Mark as Completed'}</span>
+            </button>
+
             {canModifyTask ? (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
@@ -190,7 +207,7 @@ export const TaskDetailModal: React.FC = () => {
           </div>
 
           {/* Quick Properties */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-4 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs">
             <div>
               <span className="text-[0.65rem] font-bold font-mono text-[var(--text-muted)] uppercase block mb-1">
                 Deadline
@@ -249,6 +266,32 @@ export const TaskDetailModal: React.FC = () => {
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
                 <option value="urgent">Urgent</option>
+              </select>
+            </div>
+
+            <div>
+              <span className="text-[0.65rem] font-bold font-mono text-[var(--text-muted)] uppercase block mb-1">
+                Status
+              </span>
+              <select
+                disabled={!canModifyTask}
+                value={selectedTask.status}
+                onChange={e => {
+                  const newStatus = e.target.value as any;
+                  if (newStatus === 'completed' && selectedTask.status !== 'completed') {
+                    toggleTaskComplete(selectedTask.id);
+                  } else if (newStatus !== 'completed' && selectedTask.status === 'completed') {
+                    toggleTaskComplete(selectedTask.id);
+                  } else {
+                    updateTask(selectedTask.id, { status: newStatus });
+                  }
+                }}
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] capitalize focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <option value="not_started">Not Started</option>
+                <option value="in_progress">In Progress</option>
+                <option value="waiting">Waiting</option>
+                <option value="completed">Completed</option>
               </select>
             </div>
           </div>

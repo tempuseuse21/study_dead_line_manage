@@ -923,8 +923,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       description: taskData.description || '',
       type: taskData.type || 'assignment',
       subjectId,
-      createdById: 'student',
-      createdByName: 'Student',
+      createdById: taskData.createdById || 'student',
+      createdByName: taskData.createdByName || 'Student',
       assignedToIds: ['all'],
       dueDate: taskData.dueDate || getTodayStr(),
       dueTime: taskData.dueTime || '23:59',
@@ -1003,11 +1003,6 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map(t => {
         if (t.id === taskId) {
           const finalData = { ...data };
-          // Completed tasks cannot be reopened or downgraded in status/progress
-          if (t.status === 'completed') {
-            finalData.status = 'completed';
-            finalData.progress = 100;
-          }
           updatedTask = { ...t, ...finalData, updatedAt: new Date().toISOString() };
           if (supabaseService.isAvailable()) {
             supabaseService.upsertTask(updatedTask);
@@ -1018,7 +1013,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     );
     if (selectedTask?.id === taskId) {
-      setSelectedTask(prev => (prev ? { ...prev, ...data, status: prev.status === 'completed' ? 'completed' : (data.status || prev.status), progress: prev.status === 'completed' ? 100 : (data.progress ?? prev.progress), updatedAt: new Date().toISOString() } : null));
+      setSelectedTask(prev => (prev ? { ...prev, ...data, updatedAt: new Date().toISOString() } : null));
     }
     try {
       await fetch(`/api/tasks/${taskId}`, {
@@ -1070,25 +1065,58 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // Completed tasks cannot be reopened once moved into completed archive
-    if (task.status === 'completed') return;
+    const isCurrentlyCompleted = task.status === 'completed';
 
-    const updatedSubtasks = task.subtasks.map(st => ({
-      ...st,
-      completed: true,
-      completedAt: new Date().toISOString()
-    }));
+    if (isCurrentlyCompleted) {
+      // Reopen task and move back to active tasks
+      const updatedSubtasks = (task.subtasks || []).map(st => ({
+        ...st,
+        completed: false,
+        completedAt: undefined
+      }));
 
-    await updateTask(taskId, {
-      status: 'completed',
-      progress: 100,
-      completedAt: new Date().toISOString(),
-      subtasks: updatedSubtasks
-    });
+      await updateTask(taskId, {
+        status: 'not_started',
+        progress: 0,
+        completedAt: undefined,
+        subtasks: updatedSubtasks
+      });
 
-    triggerCompletionConfetti();
-    playNotificationChime();
-    logActivity('completed task', task.title, 'task', task.id);
+      triggerWebsiteNotification({
+        type: 'task',
+        title: 'Task Reopened ↩',
+        message: `"${task.title}" has been moved back to Active Tasks.`,
+        chimeType: 'success',
+        broadcast: true
+      });
+      logActivity('reopened task', task.title, 'task', task.id);
+    } else {
+      // Mark as completed and move to completed tasks
+      const updatedSubtasks = (task.subtasks || []).map(st => ({
+        ...st,
+        completed: true,
+        completedAt: new Date().toISOString()
+      }));
+
+      await updateTask(taskId, {
+        status: 'completed',
+        progress: 100,
+        completedAt: new Date().toISOString(),
+        subtasks: updatedSubtasks
+      });
+
+      triggerCompletionConfetti();
+      playNotificationChime();
+
+      triggerWebsiteNotification({
+        type: 'task',
+        title: 'Task Completed! 🎉',
+        message: `"${task.title}" has been completed and moved to Completed Tasks.`,
+        chimeType: 'success',
+        broadcast: true
+      });
+      logActivity('completed task', task.title, 'task', task.id);
+    }
   };
 
   const toggleSubtask = async (taskId: string, subtaskId: string): Promise<void> => {

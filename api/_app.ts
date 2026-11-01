@@ -242,6 +242,11 @@ app.put('/api/tasks/:id', (req, res) => {
   if (updated.status === 'completed' && prevTask.status !== 'completed') {
     updated.completedAt = updated.completedAt || new Date().toISOString();
     updated.progress = 100;
+  } else if (updated.status !== 'completed' && prevTask.status === 'completed') {
+    updated.completedAt = undefined;
+    if (req.body.progress === undefined) {
+      updated.progress = 0;
+    }
   }
 
   db.tasks[taskIndex] = updated;

@@ -36,14 +36,18 @@ export const TasksView: React.FC = () => {
     { id: 'tomorrow', label: 'Due Tomorrow' },
     { id: 'this_week', label: 'This Week' },
     { id: 'overdue', label: 'Overdue' },
-    { id: 'high_priority', label: 'High Priority' }
+    { id: 'high_priority', label: 'High Priority' },
+    { id: 'completed', label: 'Completed' }
   ];
 
   const kanbanColumns: { status: TaskStatus; label: string; dotColor: string }[] = [
     { status: 'not_started', label: 'Not Started', dotColor: 'bg-slate-400' },
     { status: 'in_progress', label: 'In Progress', dotColor: 'bg-indigo-500' },
-    { status: 'waiting', label: 'Waiting on Others', dotColor: 'bg-amber-500' }
+    { status: 'waiting', label: 'Waiting on Others', dotColor: 'bg-amber-500' },
+    { status: 'completed', label: 'Completed', dotColor: 'bg-emerald-500' }
   ];
+
+  const completedCount = tasks.filter(t => t.status === 'completed').length;
 
   return (
     <div className="space-y-6 w-full max-w-7xl mx-auto min-w-0 overflow-x-hidden animate-in fade-in duration-300">
@@ -213,12 +217,50 @@ export const TasksView: React.FC = () => {
       {/* Main Content Area */}
       {viewMode === 'list' ? (
         <div className="space-y-3">
+          {/* Informative banner for active view when completed tasks exist */}
+          {completedCount > 0 && filters.quickFilter === 'all' && (
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 text-xs">
+              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-medium">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                <span>
+                  <strong>{completedCount} completed task{completedCount > 1 ? 's' : ''}</strong> moved to the Completed section.
+                </span>
+              </div>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, quickFilter: 'completed' }))}
+                className="px-3 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold transition-colors cursor-pointer"
+              >
+                View Completed ({completedCount}) →
+              </button>
+            </div>
+          )}
+
+          {/* Banner when viewing Completed filter */}
+          {filters.quickFilter === 'completed' && (
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-700 dark:text-emerald-400">
+              <div className="flex items-center gap-2 font-medium">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                <span>Viewing Completed Tasks archive. Click "Completed" on any task to reopen it.</span>
+              </div>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, quickFilter: 'all' }))}
+                className="px-3 py-1 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold transition-colors cursor-pointer"
+              >
+                ← Back to Active Tasks
+              </button>
+            </div>
+          )}
+
           {filteredTasks.length === 0 ? (
             <div className="p-12 text-center rounded-3xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-card)]">
               <CheckCircle2 className="w-10 h-10 text-[var(--text-faint)] mx-auto mb-2" />
-              <h3 className="text-sm font-bold text-[var(--text-main)]">No tasks found</h3>
+              <h3 className="text-sm font-bold text-[var(--text-main)]">
+                {filters.quickFilter === 'completed' ? 'No completed tasks yet' : 'No tasks found'}
+              </h3>
               <p className="text-xs text-[var(--text-muted)] mt-1">
-                Try adjusting your filters or create a new assignment task.
+                {filters.quickFilter === 'completed'
+                  ? 'Completed tasks will automatically move here when marked as Done.'
+                  : 'Try adjusting your filters or create a new assignment task.'}
               </p>
             </div>
           ) : (
@@ -226,10 +268,22 @@ export const TasksView: React.FC = () => {
           )}
         </div>
       ) : (
-        /* Kanban View */
+        /* Kanban View: shows all status columns including Completed */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
           {kanbanColumns.map(col => {
-            const colTasks = filteredTasks.filter(t => t.status === col.status);
+            const colTasks = tasks.filter(t => {
+              if (t.status !== col.status) return false;
+              if (filters.subjectId !== 'all' && t.subjectId !== filters.subjectId) return false;
+              if (filters.priority !== 'all' && t.priority !== filters.priority) return false;
+              if (filters.searchQuery.trim()) {
+                const q = filters.searchQuery.toLowerCase();
+                const matchTitle = t.title.toLowerCase().includes(q);
+                const matchDesc = t.description?.toLowerCase().includes(q);
+                if (!matchTitle && !matchDesc) return false;
+              }
+              return true;
+            });
+
             return (
               <div
                 key={col.status}

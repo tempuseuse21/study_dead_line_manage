@@ -13,7 +13,9 @@ import {
   Binary,
   Code,
   GitFork,
-  User
+  User,
+  CheckCircle2,
+  Check
 } from 'lucide-react';
 import { formatLiveCountdown, getPriorityBadge, formatDateDisplay } from '../../lib/utils';
 import { Task } from '../../types';
@@ -25,11 +27,12 @@ interface TaskCardProps {
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task, compact = false }) => {
-  const { setSelectedTask, subjects } = useTasks();
+  const { setSelectedTask, subjects, toggleTaskComplete } = useTasks();
 
+  const isCompleted = task.status === 'completed';
   const subject = subjects.find(s => s.id === task.subjectId);
   const priorityInfo = getPriorityBadge(task.priority);
-  const countdown = formatLiveCountdown(task.dueDate, task.dueTime, false);
+  const countdown = formatLiveCountdown(task.dueDate, task.dueTime, isCompleted);
   const hasIncompleteDependencies = task.dependencies?.some(d => !d.isCompleted);
 
   const getSubjectIcon = (code?: string) => {
@@ -56,14 +59,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, compact = false }) => 
       id={`task-card-${task.id}`}
       onClick={() => setSelectedTask(task)}
       className={`group relative flex flex-col rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs ${
-        task.isPinned
+        isCompleted
+          ? 'bg-emerald-500/5 border-emerald-500/30 hover:border-emerald-500/50'
+          : task.isPinned
           ? 'bg-amber-500/5 border-amber-500/30 hover:border-amber-500/50'
           : countdown.isOverdue
           ? 'bg-rose-500/5 border-rose-500/30 hover:border-rose-500/50'
           : 'bg-[var(--bg-card)] border-[var(--border-subtle)] hover:border-indigo-500/40 hover:shadow-md hover:-translate-y-0.5'
       } ${compact ? 'p-3.5' : 'p-4 sm:p-5'}`}
     >
-      {/* Header Meta: Subject, Pinned/Official Badges, Priority, Countdown */}
+      {/* Header Meta: Subject, Pinned/Official Badges, Priority, Complete Button */}
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {task.isPinned && (
@@ -94,13 +99,32 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, compact = false }) => 
           )}
         </div>
 
-        {/* Priority Badge */}
-        <span
-          className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.65rem] font-mono font-bold flex-shrink-0 ${priorityInfo.className}`}
-        >
-          <span className={`w-1.5 h-1.5 rounded-full ${priorityInfo.dotColor}`} />
-          <span>{priorityInfo.label}</span>
-        </span>
+        {/* Priority Badge & Mark Done Button */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.65rem] font-mono font-bold flex-shrink-0 ${priorityInfo.className}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${priorityInfo.dotColor}`} />
+            <span>{priorityInfo.label}</span>
+          </span>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleTaskComplete(task.id);
+            }}
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              isCompleted
+                ? 'bg-emerald-500 text-white shadow-xs hover:bg-emerald-600'
+                : 'bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-emerald-600 hover:border-emerald-500/40 hover:bg-emerald-500/10'
+            }`}
+            title={isCompleted ? 'Completed! Click to reopen task' : 'Click to mark as completed'}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{isCompleted ? 'Done' : 'Complete'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -113,7 +137,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, compact = false }) => 
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="font-display font-semibold text-sm sm:text-base text-[var(--text-main)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
+          <h3 className={`font-display font-semibold text-sm sm:text-base text-[var(--text-main)] transition-colors line-clamp-1 ${
+            isCompleted ? 'line-through text-[var(--text-muted)]' : 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
+          }`}>
             {task.title}
           </h3>
           {task.description && !compact && (
@@ -137,12 +163,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, compact = false }) => 
       {/* Card Footer */}
       <div className="mt-auto flex flex-col gap-2 pt-3 border-t border-[var(--border-subtle)] text-xs">
         <div className="flex items-center justify-between gap-2">
-          <div
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[0.65rem] font-mono font-bold border transition-colors ${countdown.badgeClass}`}
-          >
-            <Clock className="w-3 h-3" />
-            <span>{countdown.text}</span>
-          </div>
+          {isCompleted ? (
+            <div className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[0.65rem] font-mono font-bold border bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+              <Check className="w-3 h-3 stroke-[2.5]" />
+              <span>COMPLETED</span>
+            </div>
+          ) : (
+            <div
+              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[0.65rem] font-mono font-bold border transition-colors ${countdown.badgeClass}`}
+            >
+              <Clock className="w-3 h-3" />
+              <span>{countdown.text}</span>
+            </div>
+          )}
 
           <div className="flex items-center gap-3 text-[var(--text-muted)]">
             {task.attachments?.length > 0 && (

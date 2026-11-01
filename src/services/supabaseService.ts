@@ -121,7 +121,7 @@ const mapTaskToDb = (t: Partial<Task>): any => ({
   completed_at: t.completedAt
 });
 
-let isCloudReachable: boolean = true;
+let isCloudReachable: boolean = false;
 
 export const supabaseService = {
   // Verify real connectivity to Supabase

@@ -1,29 +1,11 @@
 import express from 'express';
-import { GoogleGenAI } from '@google/genai';
-import { loadDatabase, saveDatabase } from './database.js';
-import {
-  ActivityLog,
-  AppNotification,
-  Subject,
-  Task,
-  FocusSession,
-  ClassAnnouncement,
-  TimetableSlot,
-  Exam,
-  Goal,
-  Note,
-  Resource,
-  RevisionTopic,
-  DailyPlan
-} from '../src/types.js';
 
-// Load persistent local database from disk
-const db = loadDatabase();
-const persist = () => saveDatabase(db);
-
+// The former API stored accounts and portal data in a local JSON file and exposed
+// unauthenticated read/write endpoints. Supabase Auth + Postgres RLS is now the
+// only supported data path, so reject all legacy API routes by default.
 export const app = express();
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
 
 // --- Health API ---
 app.get('/api/health', (req, res) => {
@@ -242,11 +224,6 @@ app.put('/api/tasks/:id', (req, res) => {
   if (updated.status === 'completed' && prevTask.status !== 'completed') {
     updated.completedAt = updated.completedAt || new Date().toISOString();
     updated.progress = 100;
-  } else if (updated.status !== 'completed' && prevTask.status === 'completed') {
-    updated.completedAt = undefined;
-    if (req.body.progress === undefined) {
-      updated.progress = 0;
-    }
   }
 
   db.tasks[taskIndex] = updated;

@@ -10,9 +10,12 @@ import {
   AlertCircle,
   CheckCircle2,
   Eye,
-  EyeOff
+  EyeOff,
+  Database
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTasks } from '../../context/TaskContext';
+import { SupabaseConfigModal } from '../supabase/SupabaseConfigModal';
 import { DEFAULT_BATCH_REGISTRATION_CODE } from '../../lib/authorizedRoster';
 
 interface AuthModalProps {
@@ -30,6 +33,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ forceFullPage = false }) =
     authMode,
     setAuthMode
   } = useAuth();
+  const { isSupabaseConnected } = useTasks();
+
+  const [showSupabaseModal, setShowSupabaseModal] = useState(false);
 
   // Login form state
   const [loginStudentId, setLoginStudentId] = useState('');
@@ -166,6 +172,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ forceFullPage = false }) =
           <p className="text-xs text-[var(--text-muted)] mt-1">
             Sign in to access shared assignments, calendar, and batch timetable.
           </p>
+        </div>
+
+        {/* Supabase Cloud Connection Status */}
+        <div className="flex items-center justify-between p-2.5 mb-4 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] text-xs">
+          <div className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+            <div>
+              <div className="font-semibold text-[var(--text-main)] text-[11px] flex items-center gap-1.5">
+                <span>Supabase Cloud Sync</span>
+                <span className={`w-2 h-2 rounded-full ${isSupabaseConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              </div>
+              <div className="text-[10px] text-[var(--text-muted)]">
+                {isSupabaseConnected ? 'Connected & syncing cross-device' : 'Click to configure Supabase URL & Key'}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSupabaseModal(true)}
+            className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-indigo-500/25 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer"
+          >
+            {isSupabaseConnected ? 'Configure' : 'Connect Cloud'}
+          </button>
         </div>
 
         {/* Mode Switcher Tabs */}
@@ -540,6 +569,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ forceFullPage = false }) =
           </form>
         )}
       </div>
+
+      {/* Supabase Cloud Connection & Configuration Modal */}
+      <SupabaseConfigModal
+        isOpen={showSupabaseModal}
+        onClose={() => setShowSupabaseModal(false)}
+      />
     </div>
   );
 };

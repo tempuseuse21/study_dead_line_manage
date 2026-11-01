@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, getSupabaseClient } from '../lib/supabase';
 import {
   ActivityLog,
   ClassAnnouncement,
@@ -123,16 +123,20 @@ const mapTaskToDb = (t: Partial<Task>): any => ({
 
 let isCloudReachable: boolean = false;
 
+const getClient = () => getSupabaseClient() || supabase;
+
+
 export const supabaseService = {
   // Verify real connectivity to Supabase
   async verifyConnection(): Promise<boolean> {
-    if (!isSupabaseConfigured() || !supabase) {
+    const client = getClient();
+    if (!isSupabaseConfigured() || !client) {
       isCloudReachable = false;
       return false;
     }
     try {
-      const { error } = await supabase.from('subjects').select('id').limit(1);
-      if (error && (error.message?.includes('fetch failed') || error.code === 'PGRST301' || error.message?.includes('Failed to fetch'))) {
+      const { error } = await client.from('subjects').select('id').limit(1);
+      if (error && (error.message?.includes('fetch failed') || error.code === 'PGRST301' || error.message?.includes('Failed to fetch') || error.message?.includes('ENOTFOUND'))) {
         isCloudReachable = false;
         return false;
       }
@@ -146,7 +150,7 @@ export const supabaseService = {
 
   // Check availability
   isAvailable(): boolean {
-    return isSupabaseConfigured() && supabase !== null && isCloudReachable;
+    return isSupabaseConfigured() && getClient() !== null && isCloudReachable;
   },
 
   setReachable(status: boolean) {
@@ -157,7 +161,7 @@ export const supabaseService = {
   async fetchSubjects(): Promise<Subject[] | null> {
     if (!this.isAvailable()) return null;
     try {
-      const { data, error } = await supabase!.from('subjects').select('*').order('created_at', { ascending: true });
+      const { data, error } = await getClient()!.from('subjects').select('*').order('created_at', { ascending: true });
       if (error) {
         console.warn('Error fetching subjects from Supabase:', error.message);
         isCloudReachable = false;
@@ -174,7 +178,7 @@ export const supabaseService = {
   async upsertSubject(subject: Subject): Promise<boolean> {
     if (!this.isAvailable()) return false;
     const dbRow = mapSubjectToDb(subject);
-    const { error } = await supabase!.from('subjects').upsert(dbRow);
+    const { error } = await getClient()!.from('subjects').upsert(dbRow);
     if (error) {
       console.error('Error upserting subject to Supabase:', error);
       return false;
@@ -184,7 +188,7 @@ export const supabaseService = {
 
   async deleteSubject(id: string): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('subjects').delete().eq('id', id);
+    const { error } = await getClient()!.from('subjects').delete().eq('id', id);
     if (error) {
       console.error('Error deleting subject from Supabase:', error);
       return false;
@@ -196,7 +200,7 @@ export const supabaseService = {
   async fetchTasks(): Promise<Task[] | null> {
     if (!this.isAvailable()) return null;
     try {
-      const { data, error } = await supabase!.from('tasks').select('*').order('created_at', { ascending: false });
+      const { data, error } = await getClient()!.from('tasks').select('*').order('created_at', { ascending: false });
       if (error) {
         console.warn('Error fetching tasks from Supabase:', error.message);
         isCloudReachable = false;
@@ -213,7 +217,7 @@ export const supabaseService = {
   async upsertTask(task: Task): Promise<boolean> {
     if (!this.isAvailable()) return false;
     const dbRow = mapTaskToDb(task);
-    const { error } = await supabase!.from('tasks').upsert(dbRow);
+    const { error } = await getClient()!.from('tasks').upsert(dbRow);
     if (error) {
       console.error('Error upserting task to Supabase:', error);
       return false;
@@ -223,7 +227,7 @@ export const supabaseService = {
 
   async deleteTask(id: string): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('tasks').delete().eq('id', id);
+    const { error } = await getClient()!.from('tasks').delete().eq('id', id);
     if (error) {
       console.error('Error deleting task from Supabase:', error);
       return false;
@@ -234,7 +238,7 @@ export const supabaseService = {
   // --- Exams ---
   async fetchExams(): Promise<Exam[]> {
     if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('exams').select('*');
+    const { data, error } = await getClient()!.from('exams').select('*');
     if (error) return [];
     return (data || []).map(row => ({
       id: row.id,
@@ -255,7 +259,7 @@ export const supabaseService = {
 
   async upsertExam(exam: Exam): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('exams').upsert({
+    const { error } = await getClient()!.from('exams').upsert({
       id: exam.id,
       subject_id: exam.subjectId,
       title: exam.title,
@@ -274,14 +278,14 @@ export const supabaseService = {
 
   async deleteExam(id: string): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('exams').delete().eq('id', id);
+    const { error } = await getClient()!.from('exams').delete().eq('id', id);
     return !error;
   },
 
   // --- Goals ---
   async fetchGoals(): Promise<Goal[]> {
     if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('goals').select('*');
+    const { data, error } = await getClient()!.from('goals').select('*');
     if (error) return [];
     return (data || []).map(row => ({
       id: row.id,
@@ -301,7 +305,7 @@ export const supabaseService = {
 
   async upsertGoal(goal: Goal): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('goals').upsert({
+    const { error } = await getClient()!.from('goals').upsert({
       id: goal.id,
       title: goal.title,
       description: goal.description,
@@ -319,14 +323,14 @@ export const supabaseService = {
 
   async deleteGoal(id: string): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('goals').delete().eq('id', id);
+    const { error } = await getClient()!.from('goals').delete().eq('id', id);
     return !error;
   },
 
   // --- Notes ---
   async fetchNotes(): Promise<Note[]> {
     if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('notes').select('*');
+    const { data, error } = await getClient()!.from('notes').select('*');
     if (error) return [];
     return (data || []).map(row => ({
       id: row.id,
@@ -344,7 +348,7 @@ export const supabaseService = {
 
   async upsertNote(note: Note): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('notes').upsert({
+    const { error } = await getClient()!.from('notes').upsert({
       id: note.id,
       title: note.title,
       content: note.content,
@@ -360,14 +364,14 @@ export const supabaseService = {
 
   async deleteNote(id: string): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('notes').delete().eq('id', id);
+    const { error } = await getClient()!.from('notes').delete().eq('id', id);
     return !error;
   },
 
   // --- Resources ---
   async fetchResources(): Promise<Resource[]> {
     if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('resources').select('*');
+    const { data, error } = await getClient()!.from('resources').select('*');
     if (error) return [];
     return (data || []).map(row => ({
       id: row.id,
@@ -385,7 +389,7 @@ export const supabaseService = {
 
   async upsertResource(res: Resource): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('resources').upsert({
+    const { error } = await getClient()!.from('resources').upsert({
       id: res.id,
       title: res.title,
       url: res.url,
@@ -401,7 +405,7 @@ export const supabaseService = {
 
   async deleteResource(id: string): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('resources').delete().eq('id', id);
+    const { error } = await getClient()!.from('resources').delete().eq('id', id);
     return !error;
   },
 
@@ -409,7 +413,7 @@ export const supabaseService = {
   async fetchTimetableSlots(): Promise<TimetableSlot[] | null> {
     if (!this.isAvailable()) return null;
     try {
-      const { data, error } = await supabase!.from('timetable_slots').select('*').order('created_at', { ascending: true });
+      const { data, error } = await getClient()!.from('timetable_slots').select('*').order('created_at', { ascending: true });
       if (error) {
         console.warn('Error fetching timetable slots from Supabase:', error.message);
         isCloudReachable = false;
@@ -438,7 +442,7 @@ export const supabaseService = {
 
   async upsertTimetableSlot(slot: TimetableSlot): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('timetable_slots').upsert({
+    const { error } = await getClient()!.from('timetable_slots').upsert({
       id: slot.id,
       day: slot.day,
       start_time: slot.startTime,
@@ -462,7 +466,7 @@ export const supabaseService = {
 
   async deleteTimetableSlot(id: string): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('timetable_slots').delete().eq('id', id);
+    const { error } = await getClient()!.from('timetable_slots').delete().eq('id', id);
     if (error) {
       console.error('Error deleting timetable slot from Supabase:', error);
       return false;
@@ -473,7 +477,7 @@ export const supabaseService = {
   // --- Revision Topics ---
   async fetchRevisionTopics(): Promise<RevisionTopic[]> {
     if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('revision_topics').select('*');
+    const { data, error } = await getClient()!.from('revision_topics').select('*');
     if (error) return [];
     return (data || []).map(row => ({
       id: row.id,
@@ -496,7 +500,7 @@ export const supabaseService = {
 
   async upsertRevisionTopic(topic: RevisionTopic): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('revision_topics').upsert({
+    const { error } = await getClient()!.from('revision_topics').upsert({
       id: topic.id,
       title: topic.title,
       subject_id: topic.subjectId,
@@ -517,7 +521,7 @@ export const supabaseService = {
 
   async deleteRevisionTopic(id: string): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('revision_topics').delete().eq('id', id);
+    const { error } = await getClient()!.from('revision_topics').delete().eq('id', id);
     return !error;
   },
 
@@ -525,7 +529,7 @@ export const supabaseService = {
   async fetchAnnouncements(): Promise<ClassAnnouncement[] | null> {
     if (!this.isAvailable()) return null;
     try {
-      const { data, error } = await supabase!.from('announcements').select('*').order('created_at', { ascending: false });
+      const { data, error } = await getClient()!.from('announcements').select('*').order('created_at', { ascending: false });
       if (error) {
         console.warn('Error fetching announcements from Supabase:', error.message);
         isCloudReachable = false;
@@ -553,7 +557,7 @@ export const supabaseService = {
 
   async upsertAnnouncement(ann: ClassAnnouncement): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('announcements').upsert({
+    const { error } = await getClient()!.from('announcements').upsert({
       id: ann.id,
       title: ann.title,
       content: ann.content,
@@ -570,14 +574,14 @@ export const supabaseService = {
 
   async deleteAnnouncement(id: string): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('announcements').delete().eq('id', id);
+    const { error } = await getClient()!.from('announcements').delete().eq('id', id);
     return !error;
   },
 
   // --- Daily Plans ---
   async fetchDailyPlans(): Promise<DailyPlan[]> {
     if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('daily_plans').select('*');
+    const { data, error } = await getClient()!.from('daily_plans').select('*');
     if (error) return [];
     return (data || []).map(row => ({
       date: row.date,
@@ -590,7 +594,7 @@ export const supabaseService = {
 
   async upsertDailyPlan(plan: DailyPlan): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('daily_plans').upsert({
+    const { error } = await getClient()!.from('daily_plans').upsert({
       date: plan.date,
       sessions: plan.sessions || [],
       total_study_minutes: plan.totalStudyMinutes,
@@ -603,7 +607,7 @@ export const supabaseService = {
   // --- Focus Sessions ---
   async fetchFocusSessions(): Promise<FocusSession[]> {
     if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('focus_sessions').select('*').order('started_at', { ascending: false });
+    const { data, error } = await getClient()!.from('focus_sessions').select('*').order('started_at', { ascending: false });
     if (error) return [];
     return (data || []).map(row => ({
       id: row.id,
@@ -621,7 +625,7 @@ export const supabaseService = {
 
   async upsertFocusSession(session: FocusSession): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('focus_sessions').upsert({
+    const { error } = await getClient()!.from('focus_sessions').upsert({
       id: session.id,
       user_id: session.userId || 'usr_student',
       task_id: session.taskId,
@@ -639,7 +643,7 @@ export const supabaseService = {
   // --- Authorized Students Roster ---
   async fetchAuthorizedStudents(): Promise<any[]> {
     if (!this.isAvailable()) return [];
-    const { data, error } = await supabase!.from('authorized_students').select('*').order('student_id', { ascending: true });
+    const { data, error } = await getClient()!.from('authorized_students').select('*').order('student_id', { ascending: true });
     if (error) return [];
     return (data || []).map(row => ({
       studentId: row.student_id,
@@ -652,7 +656,7 @@ export const supabaseService = {
 
   async upsertAuthorizedStudent(student: { studentId: string; fullName: string; registrationCode?: string; isRegistered?: boolean; registeredAt?: string }): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('authorized_students').upsert({
+    const { error } = await getClient()!.from('authorized_students').upsert({
       student_id: student.studentId,
       full_name: student.fullName,
       registration_code: student.registrationCode || 'MSCIT2026',
@@ -664,8 +668,145 @@ export const supabaseService = {
 
   async deleteAuthorizedStudent(studentId: string): Promise<boolean> {
     if (!this.isAvailable()) return false;
-    const { error } = await supabase!.from('authorized_students').delete().eq('student_id', studentId);
+    const { error } = await getClient()!.from('authorized_students').delete().eq('student_id', studentId);
     return !error;
+  },
+
+  // --- Student Auth & Profile in Supabase ---
+  async loginWithSupabase(identifier: string, password: string): Promise<{ success: boolean; user?: any; error?: string }> {
+    const client = getClient();
+    if (!client) return { success: false, error: 'Supabase is not configured' };
+
+    const cleanInput = identifier.trim();
+
+    // Admin special case
+    if (cleanInput.toLowerCase() === 'admin' || cleanInput.toLowerCase() === 'cr admin') {
+      if (password === 'mscit2026' || password === 'iamcr') {
+        return {
+          success: true,
+          user: {
+            id: 'usr_admin',
+            studentId: 'admin',
+            fullName: 'CR Admin',
+            email: 'admin@mscit.edu',
+            role: 'cr_admin',
+            registeredAt: new Date().toISOString()
+          }
+        };
+      }
+      return { success: false, error: 'Invalid admin password' };
+    }
+
+    // Step 1: Check if input matches a Student ID in authorized_students table
+    let studentId = cleanInput;
+    let fullName = '';
+
+    try {
+      const { data: byId } = await client
+        .from('authorized_students')
+        .select('*')
+        .ilike('student_id', cleanInput)
+        .limit(1);
+
+      if (byId && byId.length > 0) {
+        studentId = byId[0].student_id;
+        fullName = byId[0].full_name;
+      } else {
+        // Step 2: Check if input matches Full Name
+        const { data: byName } = await client
+          .from('authorized_students')
+          .select('*')
+          .ilike('full_name', cleanInput);
+
+        if (byName && byName.length > 1) {
+          return {
+            success: false,
+            error: `Multiple students have the name "${cleanInput}". Please use your unique Student ID (Roll Number) to log in.`
+          };
+        } else if (byName && byName.length === 1) {
+          studentId = byName[0].student_id;
+          fullName = byName[0].full_name;
+        }
+      }
+    } catch (err) {
+      console.warn('Error querying authorized_students table in Supabase:', err);
+    }
+
+    // Step 3: Sign in with Supabase Auth
+    const email = cleanInput.includes('@') ? cleanInput.toLowerCase() : `${studentId.toLowerCase()}@mscit.edu`;
+    const { data: authData, error: authError } = await client.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (authError) {
+      return { success: false, error: authError.message };
+    }
+
+    const authUser = authData.user;
+    const resolvedStudentId = authUser?.user_metadata?.student_id || studentId;
+    const resolvedFullName = authUser?.user_metadata?.full_name || fullName || 'Student';
+
+    return {
+      success: true,
+      user: {
+        id: authUser?.id || `usr_${resolvedStudentId}`,
+        studentId: resolvedStudentId,
+        fullName: resolvedFullName,
+        email: authUser?.email || email,
+        role: (authUser?.app_metadata?.role === 'admin' ? 'cr_admin' : 'student') as 'cr_admin' | 'student',
+        registeredAt: authUser?.created_at || new Date().toISOString()
+      }
+    };
+  },
+
+  async registerWithSupabase(input: { studentId: string; fullName: string; password: string; registrationCode: string }): Promise<{ success: boolean; user?: any; error?: string }> {
+    const client = getClient();
+    if (!client) return { success: false, error: 'Supabase is not configured' };
+
+    const cleanId = input.studentId.trim();
+    const cleanName = input.fullName.trim();
+    const email = `${cleanId.toLowerCase()}@mscit.edu`;
+
+    // 1. Sign up user in Supabase Auth
+    const { data: authData, error: authErr } = await client.auth.signUp({
+      email,
+      password: input.password,
+      options: {
+        data: {
+          student_id: cleanId,
+          full_name: cleanName
+        }
+      }
+    });
+
+    if (authErr) {
+      return { success: false, error: authErr.message };
+    }
+
+    // 2. Persist in authorized_students table in Supabase
+    try {
+      await client.from('authorized_students').upsert({
+        student_id: cleanId,
+        full_name: cleanName,
+        registration_code: input.registrationCode || 'MSCIT2026',
+        is_registered: true,
+        registered_at: new Date().toISOString()
+      });
+    } catch {}
+
+    const authUser = authData.user;
+    return {
+      success: true,
+      user: {
+        id: authUser?.id || `usr_${cleanId}`,
+        studentId: cleanId,
+        fullName: cleanName,
+        email,
+        role: 'student' as const,
+        registeredAt: authUser?.created_at || new Date().toISOString()
+      }
+    };
   },
 
   // --- Realtime Subscriptions ---
@@ -680,7 +821,7 @@ export const supabaseService = {
       .subscribe();
 
     return () => {
-      supabase!.removeChannel(channel);
+      getClient()!.removeChannel(channel);
     };
   }
 };

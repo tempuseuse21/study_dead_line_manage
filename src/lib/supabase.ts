@@ -2,10 +2,24 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const env = (import.meta as any).env || (typeof process !== 'undefined' ? process.env : {}) || {};
-const supabaseUrl = env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY || '';
+
+export const getSupabaseConfig = () => {
+  let customUrl = '';
+  let customKey = '';
+  try {
+    if (typeof localStorage !== 'undefined') {
+      customUrl = localStorage.getItem('custom_supabase_url') || '';
+      customKey = localStorage.getItem('custom_supabase_key') || '';
+    }
+  } catch {}
+
+  const supabaseUrl = customUrl || env.VITE_SUPABASE_URL || '';
+  const supabaseAnonKey = customKey || env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY || '';
+  return { supabaseUrl, supabaseAnonKey };
+};
 
 export const isSupabaseConfigured = (): boolean => {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig();
   return Boolean(
     supabaseUrl &&
     supabaseAnonKey &&
@@ -14,11 +28,33 @@ export const isSupabaseConfigured = (): boolean => {
   );
 };
 
-export const supabase: SupabaseClient | null = isSupabaseConfigured()
-  ? createClient(supabaseUrl, supabaseAnonKey, {
+let clientInstance: SupabaseClient | null = null;
+let lastUrl = '';
+let lastKey = '';
+
+export const getSupabaseClient = (): SupabaseClient | null => {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig();
+  if (!isSupabaseConfigured()) return null;
+
+  if (!clientInstance || lastUrl !== supabaseUrl || lastKey !== supabaseAnonKey) {
+    lastUrl = supabaseUrl;
+    lastKey = supabaseAnonKey;
+    clientInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
       },
-    })
-  : null;
+    });
+  }
+  return clientInstance;
+};
+
+export const setCustomSupabaseConfig = (url: string, key: string) => {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('custom_supabase_url', url.trim());
+    localStorage.setItem('custom_supabase_key', key.trim());
+  }
+  clientInstance = null; // force reload client
+};
+
+export const supabase: SupabaseClient | null = getSupabaseClient();

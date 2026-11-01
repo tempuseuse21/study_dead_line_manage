@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, getSupabaseClient } from '../lib/supabase';
+import { supabaseService } from '../services/supabaseService';
 
 export interface StudentProfile {
   id: string;
@@ -34,14 +35,10 @@ interface AuthContextType {
   setShowAuthModal: (show: boolean) => void;
   authMode: 'login' | 'register' | 'forgot_password';
   setAuthMode: (mode: 'login' | 'register' | 'forgot_password') => void;
+  updateProfile?: (data: Partial<StudentProfile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const toAuthEmail = (value: string) => {
-  const normalized = value.trim().toLowerCase();
-  return normalized.includes('@') ? normalized : `${normalized}@mscit.edu`;
-};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<StudentProfile | null>(() => {
@@ -54,7 +51,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(() => {
-    // Show auth modal on fresh devices that do not have an existing logged-in session
     return !localStorage.getItem('mscit_current_student');
   });
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot_password'>('login');
@@ -84,7 +80,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     }
 
-    // Call central server /api/auth/login backed by data/database.json
+    // 1. Prioritize Cloud Supabase Database if live & reachable
+    let isCloudLive = false;
+    try {
+      isCloudLive = await supabaseService.verifyConnection();
+    } catch {
+      isCloudLive = false;
+    }
+
+    if (isCloudLive) {
+      const cloudRes = await supabaseService.loginWithSupabase(cleanInput, passwordInput);
+      if (cloudRes.success && cloudRes.user) {
+        setUser(cloudRes.user);
+        localStorage.setItem('mscit_current_student', JSON.stringify(cloudRes.user));
+        if (cloudRes.user.role === 'cr_admin') {
+          localStorage.setItem('studysync_is_admin', 'true');
+        }
+        setShowAuthModal(false);
+        return { success: true };
+      }
+      if (cloudRes.error) {
+        return { success: false, error: cloudRes.error };
+      }
+    }
+
+    // 2. Central API fallback (disk-backed database.json)
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -105,33 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: data.error };
       }
     } catch {
-      // Local API unreachable, try Supabase if configured
-      if (supabase && isSupabaseConfigured()) {
-        try {
-          const { data: sbData, error: sbErr } = await supabase.auth.signInWithPassword({
-            email: toAuthEmail(cleanInput),
-            password: passwordInput
-          });
-          if (sbErr) return { success: false, error: sbErr.message };
-          if (sbData.user) {
-            const mapped: StudentProfile = {
-              id: sbData.user.id,
-              studentId: sbData.user.user_metadata?.student_id || cleanInput,
-              fullName: sbData.user.user_metadata?.full_name || 'Student',
-              email: sbData.user.email || `${cleanInput}@mscit.edu`,
-              registeredAt: sbData.user.created_at || new Date().toISOString(),
-              role: 'student'
-            };
-            setUser(mapped);
-            localStorage.setItem('mscit_current_student', JSON.stringify(mapped));
-            setShowAuthModal(false);
-            return { success: true };
-          }
-        } catch (err: any) {
-          return { success: false, error: err.message || 'Supabase authentication failed' };
-        }
-      }
-      return { success: false, error: 'Could not connect to central server. Please verify your connection.' };
+      return { success: false, error: 'Database server unreachable. Please check connection.' };
     }
 
     return { success: false, error: 'Invalid login credentials. Please check your Student ID / Name and password.' };
@@ -157,6 +151,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: 'Invalid Registration Code. Default batch code is MSCIT2026.' };
     }
 
+    // 1. Register in Supabase Database if available
+    let isCloudLive = false;
+    try {
+      isCloudLive = await supabaseService.verifyConnection();
+    } catch {
+      isCloudLive = false;
+    }
+
+    if (isCloudLive) {
+      const cloudRes = await supabaseService.registerWithSupabase({
+        studentId: input.studentId.trim(),
+        fullName: input.fullName.trim(),
+        password: input.password,
+        registrationCode: input.registrationCode.trim()
+      });
+      if (cloudRes.success && cloudRes.user) {
+        setUser(cloudRes.user);
+        localStorage.setItem('mscit_current_student', JSON.stringify(cloudRes.user));
+        setShowAuthModal(false);
+        return { success: true };
+      }
+      if (cloudRes.error) {
+        return { success: false, error: cloudRes.error };
+      }
+    }
+
+    // 2. Central API registration fallback
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -177,7 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return { success: false, error: data.error || 'Registration failed.' };
     } catch {
-      return { success: false, error: 'Could not connect to server for registration.' };
+      return { success: false, error: 'Could not connect to database for registration.' };
     }
   };
 
@@ -217,16 +238,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return { success: false, error: data.error || 'Password reset failed.' };
     } catch {
-      return { success: false, error: 'Could not connect to server for password reset.' };
+      return { success: false, error: 'Could not connect to database for password reset.' };
     }
+  };
+
+  const updateProfile = (data: Partial<StudentProfile>) => {
+    if (!user) return;
+    const updated = { ...user, ...data };
+    setUser(updated);
+    localStorage.setItem('mscit_current_student', JSON.stringify(updated));
   };
 
   const logout = async () => {
     localStorage.removeItem('mscit_current_student');
     localStorage.removeItem('studysync_is_admin');
-    if (supabase && isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (client) {
       try {
-        await supabase.auth.signOut();
+        await client.auth.signOut();
       } catch {}
     }
     setUser(null);
@@ -245,7 +274,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showAuthModal,
     setShowAuthModal,
     authMode,
-    setAuthMode
+    setAuthMode,
+    updateProfile
   }), [user, isLoading, isAdmin, showAuthModal, authMode]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

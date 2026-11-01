@@ -1,4 +1,6 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 
 // The former API stored accounts and portal data in a local JSON file and exposed
 // unauthenticated read/write endpoints. Supabase Auth + Postgres RLS is now the
@@ -43,6 +45,56 @@ app.use(express.json({ limit: '1mb' }));
 // --- Health API ---
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), persistence: 'disk_json' });
+});
+
+// --- Supabase Config API ---
+app.get('/api/config/supabase', (req, res) => {
+  const envPath = path.join(process.cwd(), '.env');
+  let url = process.env.VITE_SUPABASE_URL || '';
+  let anonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+
+  if (fs.existsSync(envPath)) {
+    const content = fs.readFileSync(envPath, 'utf8');
+    const urlMatch = content.match(/VITE_SUPABASE_URL=["']?([^"'\r\n]+)/);
+    const keyMatch = content.match(/VITE_SUPABASE_ANON_KEY=["']?([^"'\r\n]+)/);
+    if (urlMatch) url = urlMatch[1];
+    if (keyMatch) anonKey = keyMatch[1];
+  }
+  res.json({ url, anonKey });
+});
+
+app.post('/api/config/supabase', (req, res) => {
+  const { url, anonKey } = req.body;
+  if (!url || !anonKey) {
+    return res.status(400).json({ error: 'Supabase URL and Anon Key are required' });
+  }
+  const cleanUrl = String(url).trim();
+  const cleanKey = String(anonKey).trim();
+
+  try {
+    const envPath = path.join(process.cwd(), '.env');
+    let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+
+    if (envContent.includes('VITE_SUPABASE_URL=')) {
+      envContent = envContent.replace(/VITE_SUPABASE_URL=.*/g, `VITE_SUPABASE_URL="${cleanUrl}"`);
+    } else {
+      envContent += `\nVITE_SUPABASE_URL="${cleanUrl}"`;
+    }
+
+    if (envContent.includes('VITE_SUPABASE_ANON_KEY=')) {
+      envContent = envContent.replace(/VITE_SUPABASE_ANON_KEY=.*/g, `VITE_SUPABASE_ANON_KEY="${cleanKey}"`);
+    } else {
+      envContent += `\nVITE_SUPABASE_ANON_KEY="${cleanKey}"`;
+    }
+
+    fs.writeFileSync(envPath, envContent, 'utf8');
+    process.env.VITE_SUPABASE_URL = cleanUrl;
+    process.env.VITE_SUPABASE_ANON_KEY = cleanKey;
+
+    return res.json({ success: true, message: 'Supabase configuration saved to .env' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to update .env: ' + err.message });
+  }
 });
 
 // --- Auth API ---

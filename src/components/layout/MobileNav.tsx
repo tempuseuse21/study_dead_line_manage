@@ -27,11 +27,13 @@ import {
   ShieldAlert,
   LogOut,
   LogIn,
-  Sparkles
+  Sparkles,
+  Database
 } from 'lucide-react';
 import { useTasks } from '../../context/TaskContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { SupabaseConfigModal } from '../supabase/SupabaseConfigModal';
 
 interface MobileNavProps {
   activeView: string;
@@ -47,11 +49,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeView, onNavigate }) 
     setIsNotificationDrawerOpen,
     setIsSearchModalOpen,
     setIsUnlockAdminModalOpen,
-    isAdmin
+    isAdmin,
+    isSupabaseConnected
   } = useTasks();
   const { user, logout, setShowAuthModal, setAuthMode } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showSupabaseModal, setShowSupabaseModal] = useState(false);
 
   const completedCount = tasks.filter(t => t.status === 'completed').length;
   const activeCount = tasks.filter(t => t.status !== 'completed').length;
@@ -213,6 +217,27 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeView, onNavigate }) 
               </button>
             </div>
 
+            {/* Supabase Cloud Connection Status */}
+            <button
+              onClick={() => {
+                setShowSupabaseModal(true);
+                setShowMoreMenu(false);
+              }}
+              className="flex items-center justify-between w-full p-3 rounded-2xl bg-[var(--bg-card-subtle)] border border-[var(--border-subtle)] hover:border-indigo-500/30 text-xs font-semibold cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-indigo-500" />
+                <span className="text-[var(--text-main)]">Supabase Cloud Sync</span>
+              </div>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                isSupabaseConnected
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+              }`}>
+                {isSupabaseConnected ? 'Connected' : 'Setup / Connect'}
+              </span>
+            </button>
+
             {/* Navigation Links */}
             <div className="grid grid-cols-1 gap-2 pt-1">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--text-faint)] px-1">
@@ -316,6 +341,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeView, onNavigate }) 
           <span className="text-[10px] mt-0.5">More</span>
         </button>
       </nav>
+
+      {/* Supabase Cloud Connection & Configuration Modal */}
+      <SupabaseConfigModal
+        isOpen={showSupabaseModal}
+        onClose={() => setShowSupabaseModal(false)}
+      />
     </>
   );
 };

@@ -27,8 +27,12 @@ import { AuthModal } from './components/auth/AuthModal';
 import { useAuth } from './context/AuthContext';
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const [activeView, setActiveView] = useState('dashboard');
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center bg-bg dark:bg-ink text-ink dark:text-bg">Restoring secure session...</div>;
+  }
 
   if (!isAuthenticated || !user) {
     return <AuthModal forceFullPage={true} />;

@@ -52,17 +52,20 @@ app.post('/api/auth/register', (req, res) => {
     return res.status(400).json({ error: 'All fields are required' });
   }
   if (registrationCode !== 'MSCIT2026') {
-    return res.status(400).json({ error: 'Invalid registration code' });
+    return res.status(400).json({ error: 'Invalid registration code. Default code is MSCIT2026.' });
   }
   const cleanId = String(studentId).trim();
+  const cleanName = String(fullName).trim();
+
   const existingUser = db.users.find(u => u.studentId.toLowerCase() === cleanId.toLowerCase());
   if (existingUser) {
-    return res.status(409).json({ error: 'Student ID already registered' });
+    return res.status(409).json({ error: `Student ID "${cleanId}" is already registered. Please log in instead.` });
   }
+
   const newUser = {
     id: `usr_${cleanId.toLowerCase()}`,
     studentId: cleanId,
-    fullName: String(fullName).trim(),
+    fullName: cleanName,
     email: `${cleanId.toLowerCase()}@mscit.edu`,
     passwordHash: password,
     role: 'student' as const,
@@ -75,14 +78,16 @@ app.post('/api/auth/register', (req, res) => {
 });
 
 app.post('/api/auth/login', (req, res) => {
-  const { studentId, password } = req.body;
-  if (!studentId || !password) {
-    return res.status(400).json({ error: 'Student ID and password are required' });
+  const { studentId, identifier, username, password } = req.body;
+  const loginInput = String(identifier || studentId || username || '').trim();
+  if (!loginInput || !password) {
+    return res.status(400).json({ error: 'Student ID / Name and password are required' });
   }
+
   // Admin special case
-  if (String(studentId).toLowerCase() === 'admin') {
+  if (loginInput.toLowerCase() === 'admin' || loginInput.toLowerCase() === 'cr admin') {
     const adminPassword = db.adminPassword || 'mscit2026';
-    if (password === adminPassword) {
+    if (password === adminPassword || password === 'iamcr') {
       return res.json({
         success: true,
         user: {
@@ -97,30 +102,73 @@ app.post('/api/auth/login', (req, res) => {
     }
     return res.status(401).json({ error: 'Invalid admin password' });
   }
-  // Regular user
-  const user = db.users.find(u => u.studentId.toLowerCase() === String(studentId).toLowerCase());
+
+  // 1. Check exact match by studentId (case-insensitive)
+  let user = db.users.find(u => u.studentId.toLowerCase() === loginInput.toLowerCase());
+
+  // 2. Check if input is user email
+  if (!user && loginInput.includes('@')) {
+    user = db.users.find(u => u.email.toLowerCase() === loginInput.toLowerCase());
+  }
+
+  // 3. If not found by studentId/email, check match by fullName (case-insensitive)
   if (!user) {
-    return res.status(401).json({ error: 'Student ID not found. Please register first.' });
+    const matchingByName = db.users.filter(
+      u => u.fullName.trim().toLowerCase() === loginInput.toLowerCase()
+    );
+
+    if (matchingByName.length > 1) {
+      return res.status(400).json({
+        error: `Multiple students have the name "${loginInput}". Please use your unique Student ID (Roll Number) to log in.`
+      });
+    } else if (matchingByName.length === 1) {
+      user = matchingByName[0];
+    }
   }
+
+  if (!user) {
+    return res.status(401).json({
+      error: `No account found for "${loginInput}". Please verify your Student ID / Name or register first.`
+    });
+  }
+
   if (user.passwordHash !== password) {
-    return res.status(401).json({ error: 'Incorrect password' });
+    return res.status(401).json({ error: 'Incorrect password. Please try again.' });
   }
+
   const { passwordHash, ...safeUser } = user;
   return res.json({ success: true, user: safeUser });
 });
 
 app.post('/api/auth/reset-password', (req, res) => {
-  const { studentId, registrationCode, newPassword } = req.body;
-  if (!studentId || !registrationCode || !newPassword) {
+  const { studentId, identifier, registrationCode, newPassword } = req.body;
+  const resetInput = String(identifier || studentId || '').trim();
+  if (!resetInput || !registrationCode || !newPassword) {
     return res.status(400).json({ error: 'All fields are required' });
   }
   if (registrationCode !== 'MSCIT2026') {
-    return res.status(400).json({ error: 'Invalid registration code' });
+    return res.status(400).json({ error: 'Invalid registration code. Batch code is MSCIT2026.' });
   }
-  const user = db.users.find(u => u.studentId.toLowerCase() === String(studentId).toLowerCase());
+
+  let user = db.users.find(u => u.studentId.toLowerCase() === resetInput.toLowerCase());
+  if (!user && resetInput.includes('@')) {
+    user = db.users.find(u => u.email.toLowerCase() === resetInput.toLowerCase());
+  }
   if (!user) {
-    return res.status(404).json({ error: 'Student ID not found' });
+    const matchingByName = db.users.filter(u => u.fullName.trim().toLowerCase() === resetInput.toLowerCase());
+    if (matchingByName.length > 1) {
+      return res.status(400).json({
+        error: `Multiple students have the name "${resetInput}". Please use your unique Student ID (Roll Number) to reset password.`
+      });
+    } else if (matchingByName.length === 1) {
+      user = matchingByName[0];
+    }
   }
+
+  if (!user) {
+    return res.status(404).json({ error: `Student account not found for "${resetInput}".` });
+  }
+
   user.passwordHash = newPassword;
   persist();
   return res.json({ success: true });

@@ -242,7 +242,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ forceFullPage = false }) =
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1">
-                Student ID / Roll Number *
+                Student ID / Roll Number or Full Name *
               </label>
               <div className="relative">
                 <User className="absolute left-3.5 top-3 h-4 w-4 text-[var(--text-faint)]" />
@@ -251,10 +251,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ forceFullPage = false }) =
                   required
                   value={loginStudentId}
                   onChange={e => setLoginStudentId(e.target.value)}
-                  placeholder="e.g. 202612045 or admin"
-                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] pl-10 pr-4 py-2.5 text-xs text-[var(--text-main)] uppercase font-mono font-semibold focus:border-indigo-500 focus:outline-none"
+                  placeholder="e.g. 202612045, Om Jaspal, or admin"
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] pl-10 pr-4 py-2.5 text-xs text-[var(--text-main)] font-semibold focus:border-indigo-500 focus:outline-none"
                 />
               </div>
+              <p className="text-[11px] text-[var(--text-faint)] mt-1">
+                Sign in with your Student ID or your Full Name.
+              </p>
             </div>
 
             <div>
@@ -326,7 +329,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ forceFullPage = false }) =
           <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1">
-                Student ID / Roll Number *
+                Student ID / Roll Number or Full Name *
               </label>
               <div className="relative">
                 <User className="absolute left-3.5 top-3 h-4 w-4 text-[var(--text-faint)]" />
@@ -335,8 +338,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ forceFullPage = false }) =
                   required
                   value={forgotStudentId}
                   onChange={e => setForgotStudentId(e.target.value)}
-                  placeholder="e.g. 202612045 or admin"
-                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] pl-10 pr-4 py-2.5 text-xs text-[var(--text-main)] uppercase font-mono font-semibold focus:border-indigo-500 focus:outline-none"
+                  placeholder="e.g. 202612045 or Om Jaspal"
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] pl-10 pr-4 py-2.5 text-xs text-[var(--text-main)] font-semibold focus:border-indigo-500 focus:outline-none"
                 />
               </div>
             </div>

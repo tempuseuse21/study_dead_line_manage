@@ -15,7 +15,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isAdmin: boolean;
-  loginStudent: (studentIdOrEmail: string, passwordInput: string) => Promise<{ success: boolean; error?: string }>;
+  loginStudent: (studentIdOrName: string, passwordInput: string) => Promise<{ success: boolean; error?: string }>;
   registerStudent: (input: {
     studentId: string;
     fullName: string;
@@ -53,36 +53,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(() => {
+    // Show auth modal on fresh devices that do not have an existing logged-in session
+    return !localStorage.getItem('mscit_current_student');
+  });
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot_password'>('login');
-
-  useEffect(() => {
-    // If no student profile stored yet, provide default student session
-    const stored = localStorage.getItem('mscit_current_student');
-    if (!stored && !user) {
-      const defaultUser: StudentProfile = {
-        id: 'usr_202612045',
-        studentId: '202612045',
-        fullName: 'Student User',
-        email: '202612045@mscit.edu',
-        registeredAt: new Date().toISOString(),
-        role: 'student'
-      };
-      setUser(defaultUser);
-      localStorage.setItem('mscit_current_student', JSON.stringify(defaultUser));
-    }
-  }, [user]);
 
   const isAdmin = user?.role === 'cr_admin' || localStorage.getItem('studysync_is_admin') === 'true';
 
-  const loginStudent = async (studentIdOrEmail: string, passwordInput: string): Promise<{ success: boolean; error?: string }> => {
-    const cleanId = studentIdOrEmail.trim();
-    if (!cleanId || !passwordInput) {
-      return { success: false, error: 'Student ID and password are required.' };
+  const loginStudent = async (studentIdOrName: string, passwordInput: string): Promise<{ success: boolean; error?: string }> => {
+    const cleanInput = studentIdOrName.trim();
+    if (!cleanInput || !passwordInput) {
+      return { success: false, error: 'Student ID / Name and password are required.' };
     }
 
-    // Special CR Admin Login
-    if (cleanId.toLowerCase() === 'admin' && (passwordInput === 'mscit2026' || passwordInput === 'iamcr')) {
+    // Special CR Admin Fast Login
+    if (cleanInput.toLowerCase() === 'admin' && (passwordInput === 'mscit2026' || passwordInput === 'iamcr')) {
       const adminUser: StudentProfile = {
         id: 'usr_admin',
         studentId: 'admin',
@@ -98,12 +84,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     }
 
-    // Attempt local API login backed by data/database.json
+    // Call central server /api/auth/login backed by data/database.json
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId: cleanId, password: passwordInput })
+        body: JSON.stringify({ identifier: cleanInput, password: passwordInput })
       });
       const data = await res.json();
       if (res.ok && data.success && data.user) {
@@ -115,7 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setShowAuthModal(false);
         return { success: true };
       }
-      if (!res.ok && data.error) {
+      if (data.error) {
         return { success: false, error: data.error };
       }
     } catch {
@@ -123,16 +109,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (supabase && isSupabaseConfigured()) {
         try {
           const { data: sbData, error: sbErr } = await supabase.auth.signInWithPassword({
-            email: toAuthEmail(cleanId),
+            email: toAuthEmail(cleanInput),
             password: passwordInput
           });
           if (sbErr) return { success: false, error: sbErr.message };
           if (sbData.user) {
             const mapped: StudentProfile = {
               id: sbData.user.id,
-              studentId: sbData.user.user_metadata?.student_id || cleanId,
+              studentId: sbData.user.user_metadata?.student_id || cleanInput,
               fullName: sbData.user.user_metadata?.full_name || 'Student',
-              email: sbData.user.email || `${cleanId}@mscit.edu`,
+              email: sbData.user.email || `${cleanInput}@mscit.edu`,
               registeredAt: sbData.user.created_at || new Date().toISOString(),
               role: 'student'
             };
@@ -145,9 +131,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { success: false, error: err.message || 'Supabase authentication failed' };
         }
       }
+      return { success: false, error: 'Could not connect to central server. Please verify your connection.' };
     }
 
-    return { success: false, error: 'Invalid Student ID or password. Try student ID 202612045 or admin.' };
+    return { success: false, error: 'Invalid login credentials. Please check your Student ID / Name and password.' };
   };
 
   const registerStudent = async (input: {
@@ -200,14 +187,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     newPassword: string;
     confirmPassword: string;
   }): Promise<{ success: boolean; error?: string }> => {
-    if (!input.studentId.trim() || !input.newPassword) {
-      return { success: false, error: 'Student ID and new password are required.' };
+    const cleanInput = input.studentId.trim();
+    if (!cleanInput || !input.newPassword) {
+      return { success: false, error: 'Student ID / Name and new password are required.' };
     }
     if (input.newPassword !== input.confirmPassword) {
       return { success: false, error: 'Passwords do not match.' };
     }
     if (input.newPassword.length < 4) {
-      return { success: false, error: 'Password must be at least 4 characters long.' };
+      return { success: false, error: 'New password must be at least 4 characters long.' };
     }
     if (input.registrationCode.trim() !== 'MSCIT2026') {
       return { success: false, error: 'Invalid Registration Code. Default batch code is MSCIT2026.' };
@@ -218,7 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          studentId: input.studentId.trim(),
+          identifier: cleanInput,
           registrationCode: input.registrationCode.trim(),
           newPassword: input.newPassword
         })

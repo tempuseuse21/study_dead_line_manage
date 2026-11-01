@@ -9,7 +9,12 @@ async function startServer() {
   // --- Vite Dev / Production Serving ---
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        watch: {
+          ignored: ['**/data/**', '**/*.json', '**/.git/**']
+        }
+      },
       appType: 'spa'
     });
     app.use(vite.middlewares);

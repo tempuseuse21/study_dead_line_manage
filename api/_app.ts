@@ -3,7 +3,40 @@ import express from 'express';
 // The former API stored accounts and portal data in a local JSON file and exposed
 // unauthenticated read/write endpoints. Supabase Auth + Postgres RLS is now the
 // only supported data path, so reject all legacy API routes by default.
+import { GoogleGenAI } from '@google/genai';
+import { loadDatabase, saveDatabase } from './database.js';
+import {
+  ActivityLog,
+  AppNotification,
+  Subject,
+  Task,
+  FocusSession,
+  ClassAnnouncement,
+  TimetableSlot,
+  Exam,
+  Goal,
+  Note,
+  Resource,
+  RevisionTopic,
+  DailyPlan
+} from '../src/types.js';
+
+// Load persistent local database from disk
+const db = loadDatabase();
+const persist = () => saveDatabase(db);
+
 export const app = express();
+
+// Cross-Device CORS Headers for multi-device support
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -224,6 +257,11 @@ app.put('/api/tasks/:id', (req, res) => {
   if (updated.status === 'completed' && prevTask.status !== 'completed') {
     updated.completedAt = updated.completedAt || new Date().toISOString();
     updated.progress = 100;
+  } else if (updated.status !== 'completed' && prevTask.status === 'completed') {
+    updated.completedAt = undefined;
+    if (req.body.progress === undefined) {
+      updated.progress = 0;
+    }
   }
 
   db.tasks[taskIndex] = updated;

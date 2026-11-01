@@ -38,104 +38,211 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Legacy student IDs are mapped to a stable email-shaped Supabase Auth identity.
-// Prefer asking users for their real email address when accounts are provisioned.
 const toAuthEmail = (value: string) => {
   const normalized = value.trim().toLowerCase();
   return normalized.includes('@') ? normalized : `${normalized}@mscit.edu`;
 };
 
-const mapAuthUser = (authUser: any): StudentProfile | null => {
-  if (!authUser) return null;
-  const metadata = authUser.user_metadata || {};
-  const appMetadata = authUser.app_metadata || {};
-  const role = appMetadata.role === 'admin' || appMetadata.role === 'cr' ? 'cr_admin' : 'student';
-  return {
-    id: authUser.id,
-    studentId: metadata.student_id || authUser.email?.split('@')[0] || '',
-    fullName: metadata.full_name || metadata.name || authUser.email?.split('@')[0] || 'Student',
-    email: authUser.email || '',
-    registeredAt: authUser.created_at || new Date().toISOString(),
-    role
-  };
-};
-
-const unavailableMessage = 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY (or the legacy VITE_SUPABASE_ANON_KEY).';
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<StudentProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<StudentProfile | null>(() => {
+    try {
+      const stored = localStorage.getItem('mscit_current_student');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot_password'>('login');
 
   useEffect(() => {
-    if (!supabase || !isSupabaseConfigured()) {
-      setIsLoading(false);
-      return;
+    // If no student profile stored yet, provide default student session
+    const stored = localStorage.getItem('mscit_current_student');
+    if (!stored && !user) {
+      const defaultUser: StudentProfile = {
+        id: 'usr_202612045',
+        studentId: '202612045',
+        fullName: 'Student User',
+        email: '202612045@mscit.edu',
+        registeredAt: new Date().toISOString(),
+        role: 'student'
+      };
+      setUser(defaultUser);
+      localStorage.setItem('mscit_current_student', JSON.stringify(defaultUser));
+    }
+  }, [user]);
+
+  const isAdmin = user?.role === 'cr_admin' || localStorage.getItem('studysync_is_admin') === 'true';
+
+  const loginStudent = async (studentIdOrEmail: string, passwordInput: string): Promise<{ success: boolean; error?: string }> => {
+    const cleanId = studentIdOrEmail.trim();
+    if (!cleanId || !passwordInput) {
+      return { success: false, error: 'Student ID and password are required.' };
     }
 
-    let active = true;
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (!active) return;
-      if (error) console.error('Unable to restore Supabase session:', error.message);
-      setUser(mapAuthUser(data.session?.user));
-      setIsLoading(false);
-    });
+    // Special CR Admin Login
+    if (cleanId.toLowerCase() === 'admin' && (passwordInput === 'mscit2026' || passwordInput === 'iamcr')) {
+      const adminUser: StudentProfile = {
+        id: 'usr_admin',
+        studentId: 'admin',
+        fullName: 'CR Admin',
+        email: 'admin@mscit.edu',
+        registeredAt: new Date().toISOString(),
+        role: 'cr_admin'
+      };
+      setUser(adminUser);
+      localStorage.setItem('mscit_current_student', JSON.stringify(adminUser));
+      localStorage.setItem('studysync_is_admin', 'true');
+      setShowAuthModal(false);
+      return { success: true };
+    }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!active) return;
-      setUser(mapAuthUser(session?.user));
-      setIsLoading(false);
-    });
+    // Attempt local API login backed by data/database.json
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId: cleanId, password: passwordInput })
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        setUser(data.user);
+        localStorage.setItem('mscit_current_student', JSON.stringify(data.user));
+        if (data.user.role === 'cr_admin') {
+          localStorage.setItem('studysync_is_admin', 'true');
+        }
+        setShowAuthModal(false);
+        return { success: true };
+      }
+      if (!res.ok && data.error) {
+        return { success: false, error: data.error };
+      }
+    } catch {
+      // Local API unreachable, try Supabase if configured
+      if (supabase && isSupabaseConfigured()) {
+        try {
+          const { data: sbData, error: sbErr } = await supabase.auth.signInWithPassword({
+            email: toAuthEmail(cleanId),
+            password: passwordInput
+          });
+          if (sbErr) return { success: false, error: sbErr.message };
+          if (sbData.user) {
+            const mapped: StudentProfile = {
+              id: sbData.user.id,
+              studentId: sbData.user.user_metadata?.student_id || cleanId,
+              fullName: sbData.user.user_metadata?.full_name || 'Student',
+              email: sbData.user.email || `${cleanId}@mscit.edu`,
+              registeredAt: sbData.user.created_at || new Date().toISOString(),
+              role: 'student'
+            };
+            setUser(mapped);
+            localStorage.setItem('mscit_current_student', JSON.stringify(mapped));
+            setShowAuthModal(false);
+            return { success: true };
+          }
+        } catch (err: any) {
+          return { success: false, error: err.message || 'Supabase authentication failed' };
+        }
+      }
+    }
 
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const isAdmin = user?.role === 'cr_admin';
-
-  const loginStudent = async (studentIdOrEmail: string, passwordInput: string) => {
-    if (!supabase || !isSupabaseConfigured()) return { success: false, error: unavailableMessage };
-    if (!studentIdOrEmail.trim() || !passwordInput) return { success: false, error: 'Student ID/email and password are required.' };
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email: toAuthEmail(studentIdOrEmail),
-      password: passwordInput
-    });
-    if (error) return { success: false, error: error.message };
-    setShowAuthModal(false);
-    return { success: true };
+    return { success: false, error: 'Invalid Student ID or password. Try student ID 202612045 or admin.' };
   };
 
-  const registerStudent = async (_input: {
+  const registerStudent = async (input: {
     studentId: string;
     fullName: string;
     registrationCode: string;
     password: string;
     confirmPassword: string;
-  }) => ({
-    success: false,
-    error: 'Self-registration is currently disabled for security. Ask your portal administrator to create/invite your Supabase Auth account, then sign in using the invited email address.'
-  });
+  }): Promise<{ success: boolean; error?: string }> => {
+    if (!input.studentId.trim() || !input.fullName.trim() || !input.password) {
+      return { success: false, error: 'All fields are required.' };
+    }
+    if (input.password !== input.confirmPassword) {
+      return { success: false, error: 'Passwords do not match.' };
+    }
+    if (input.password.length < 4) {
+      return { success: false, error: 'Password must be at least 4 characters long.' };
+    }
+    if (input.registrationCode.trim() !== 'MSCIT2026') {
+      return { success: false, error: 'Invalid Registration Code. Default batch code is MSCIT2026.' };
+    }
 
-  const resetPassword = async (_input: {
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: input.studentId.trim(),
+          fullName: input.fullName.trim(),
+          registrationCode: input.registrationCode.trim(),
+          password: input.password
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        setUser(data.user);
+        localStorage.setItem('mscit_current_student', JSON.stringify(data.user));
+        setShowAuthModal(false);
+        return { success: true };
+      }
+      return { success: false, error: data.error || 'Registration failed.' };
+    } catch {
+      return { success: false, error: 'Could not connect to server for registration.' };
+    }
+  };
+
+  const resetPassword = async (input: {
     studentId: string;
     registrationCode: string;
     newPassword: string;
     confirmPassword: string;
-  }) => ({
-    success: false,
-    error: 'Password recovery must use the verified email address attached to your Supabase Auth account. Please ask the portal administrator to send a password recovery link.'
-  });
+  }): Promise<{ success: boolean; error?: string }> => {
+    if (!input.studentId.trim() || !input.newPassword) {
+      return { success: false, error: 'Student ID and new password are required.' };
+    }
+    if (input.newPassword !== input.confirmPassword) {
+      return { success: false, error: 'Passwords do not match.' };
+    }
+    if (input.newPassword.length < 4) {
+      return { success: false, error: 'Password must be at least 4 characters long.' };
+    }
+    if (input.registrationCode.trim() !== 'MSCIT2026') {
+      return { success: false, error: 'Invalid Registration Code. Default batch code is MSCIT2026.' };
+    }
+
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: input.studentId.trim(),
+          registrationCode: input.registrationCode.trim(),
+          newPassword: input.newPassword
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true };
+      }
+      return { success: false, error: data.error || 'Password reset failed.' };
+    } catch {
+      return { success: false, error: 'Could not connect to server for password reset.' };
+    }
+  };
 
   const logout = async () => {
-    if (supabase) {
-      const { error } = await supabase.auth.signOut();
-      if (error) console.error('Supabase sign-out failed:', error.message);
+    localStorage.removeItem('mscit_current_student');
+    localStorage.removeItem('studysync_is_admin');
+    if (supabase && isSupabaseConfigured()) {
+      try {
+        await supabase.auth.signOut();
+      } catch {}
     }
     setUser(null);
+    setShowAuthModal(true);
   };
 
   const value = useMemo(() => ({

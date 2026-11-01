@@ -352,83 +352,189 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => { storage.set(StorageKeys.PREFERENCES, preferences); }, [preferences]);
   useEffect(() => { storage.set(StorageKeys.STUDY_PREFS, studyPreferences); }, [studyPreferences]);
 
-  // Authenticated Supabase-only sync. Legacy Express JSON endpoints are not trusted
-  // and must never be used as a fallback for portal data.
+  // Hybrid Cloud (Supabase) + Local Central Server (Express/Disk) Sync
+  // When Supabase is unavailable, automatically syncs with local central server (/api/*)
   useEffect(() => {
     let active = true;
     const unsubscribers: Array<() => void> = [];
 
-    if (!isAuthenticated || !authUser) {
-      setIsSupabaseConnected(false);
-      return () => { active = false; };
-    }
-
-    const syncCloudData = async () => {
-      const connected = await supabaseService.verifyConnection();
+    const fetchLocalData = async () => {
       if (!active) return;
-      if (!connected) {
-        setIsSupabaseConnected(false);
-        return;
-      }
+      try {
+        const resTasks = await fetch('/api/tasks');
+        if (resTasks.ok) {
+          const apiTasks = await resTasks.json();
+          if (Array.isArray(apiTasks) && active) {
+            setTasks(prev => {
+              if (apiTasks.length === 0 && prev.length > 0) return prev;
+              const serverIds = new Set(apiTasks.map((t: Task) => t.id));
+              const now = Date.now();
+              const recentPending = prev.filter(t => !serverIds.has(t.id) && (now - new Date(t.createdAt).getTime() < 15000));
+              return [...apiTasks, ...recentPending];
+            });
+          }
+        }
+      } catch {}
 
-      const cloudSubjects = await supabaseService.fetchSubjects();
-      const cloudTasks = await supabaseService.fetchTasks();
-      const cloudTimetable = await supabaseService.fetchTimetableSlots();
-      const cloudExams = await supabaseService.fetchExams();
-      const cloudGoals = await supabaseService.fetchGoals();
-      const cloudNotes = await supabaseService.fetchNotes();
-      const cloudResources = await supabaseService.fetchResources();
-      const cloudRevision = await supabaseService.fetchRevisionTopics();
-      const cloudAnnouncements = await supabaseService.fetchAnnouncements();
-      const cloudDailyPlans = await supabaseService.fetchDailyPlans();
-      const cloudFocus = await supabaseService.fetchFocusSessions();
+      try {
+        const resSubjects = await fetch('/api/subjects');
+        if (resSubjects.ok) {
+          const apiSubjects = await resSubjects.json();
+          if (Array.isArray(apiSubjects) && apiSubjects.length > 0 && active) setSubjects(apiSubjects);
+        }
+      } catch {}
 
-      // Seed starter shared records only from an authenticated CR/Admin session.
-      if (isAdmin && cloudSubjects?.length === 0) {
-        for (const item of INITIAL_SUBJECTS) await supabaseService.upsertSubject(item);
-      }
-      if (isAdmin && cloudTasks?.length === 0) {
-        for (const item of INITIAL_TASKS) await supabaseService.upsertTask(item);
-      }
-      if (isAdmin && cloudTimetable?.length === 0) {
-        for (const item of INITIAL_TIMETABLE_SLOTS) await supabaseService.upsertTimetableSlot(item);
-      }
+      try {
+        const resTimetable = await fetch('/api/timetable');
+        if (resTimetable.ok) {
+          const apiTimetable = await resTimetable.json();
+          if (Array.isArray(apiTimetable) && active) setTimetableSlots(apiTimetable);
+        }
+      } catch {}
 
-      if (!active) return;
-      if (cloudSubjects !== null) setSubjects(cloudSubjects.length === 0 && isAdmin ? INITIAL_SUBJECTS : cloudSubjects);
-      if (cloudTasks !== null) setTasks(cloudTasks.length === 0 && isAdmin ? INITIAL_TASKS : cloudTasks);
-      if (cloudTimetable !== null) setTimetableSlots(cloudTimetable.length === 0 && isAdmin ? INITIAL_TIMETABLE_SLOTS : cloudTimetable);
-      setExams(cloudExams);
-      setGoals(cloudGoals);
-      setNotes(cloudNotes);
-      setResources(cloudResources);
-      setRevisionTopics(cloudRevision);
-      if (cloudAnnouncements !== null) setAnnouncements(cloudAnnouncements);
-      setDailyPlans(cloudDailyPlans);
-      setFocusSessions(cloudFocus);
-      setIsSupabaseConnected(true);
+      try {
+        const resAnnouncements = await fetch('/api/announcements');
+        if (resAnnouncements.ok) {
+          const apiAnn = await resAnnouncements.json();
+          if (Array.isArray(apiAnn) && active) setAnnouncements(apiAnn);
+        }
+      } catch {}
 
-      const refresh = <T,>(promise: Promise<T>, setter: (value: T) => void) => {
-        promise.then(value => { if (active) setter(value); }).catch(error => console.warn('Realtime refresh failed:', error));
-      };
-      unsubscribers.push(
-        supabaseService.subscribeToChanges('tasks', () => refresh(supabaseService.fetchTasks(), setTasks)),
-        supabaseService.subscribeToChanges('subjects', () => refresh(supabaseService.fetchSubjects().then(v => v || []), setSubjects)),
-        supabaseService.subscribeToChanges('timetable_slots', () => refresh(supabaseService.fetchTimetableSlots().then(v => v || []), setTimetableSlots)),
-        supabaseService.subscribeToChanges('exams', () => refresh(supabaseService.fetchExams(), setExams)),
-        supabaseService.subscribeToChanges('goals', () => refresh(supabaseService.fetchGoals(), setGoals)),
-        supabaseService.subscribeToChanges('notes', () => refresh(supabaseService.fetchNotes(), setNotes)),
-        supabaseService.subscribeToChanges('resources', () => refresh(supabaseService.fetchResources(), setResources)),
-        supabaseService.subscribeToChanges('revision_topics', () => refresh(supabaseService.fetchRevisionTopics(), setRevisionTopics)),
-        supabaseService.subscribeToChanges('announcements', () => refresh(supabaseService.fetchAnnouncements().then(v => v || []), setAnnouncements)),
-        supabaseService.subscribeToChanges('daily_plans', () => refresh(supabaseService.fetchDailyPlans(), setDailyPlans)),
-        supabaseService.subscribeToChanges('focus_sessions', () => refresh(supabaseService.fetchFocusSessions(), setFocusSessions))
-      );
+      try {
+        const resExams = await fetch('/api/exams');
+        if (resExams.ok) {
+          const apiExams = await resExams.json();
+          if (Array.isArray(apiExams) && active) setExams(apiExams);
+        }
+      } catch {}
+
+      try {
+        const resGoals = await fetch('/api/goals');
+        if (resGoals.ok) {
+          const apiGoals = await resGoals.json();
+          if (Array.isArray(apiGoals) && active) setGoals(apiGoals);
+        }
+      } catch {}
+
+      try {
+        const resNotes = await fetch('/api/notes');
+        if (resNotes.ok) {
+          const apiNotes = await resNotes.json();
+          if (Array.isArray(apiNotes) && active) setNotes(apiNotes);
+        }
+      } catch {}
+
+      try {
+        const resResources = await fetch('/api/resources');
+        if (resResources.ok) {
+          const apiResources = await resResources.json();
+          if (Array.isArray(apiResources) && active) setResources(apiResources);
+        }
+      } catch {}
+
+      try {
+        const resRevision = await fetch('/api/revision-topics');
+        if (resRevision.ok) {
+          const apiRev = await resRevision.json();
+          if (Array.isArray(apiRev) && active) setRevisionTopics(apiRev);
+        }
+      } catch {}
+
+      try {
+        const resDaily = await fetch('/api/daily-plans');
+        if (resDaily.ok) {
+          const apiDaily = await resDaily.json();
+          if (Array.isArray(apiDaily) && active) setDailyPlans(apiDaily);
+        }
+      } catch {}
+
+      try {
+        const resFocus = await fetch('/api/focus-sessions');
+        if (resFocus.ok) {
+          const apiFocus = await resFocus.json();
+          if (Array.isArray(apiFocus) && active) setFocusSessions(apiFocus);
+        }
+      } catch {}
     };
 
-    syncCloudData().catch(error => {
-      console.error('Authenticated Supabase sync failed:', error);
-      if (active) setIsSupabaseConnected(false);
+    const syncCloudData = async () => {
+      let isCloudActive = false;
+      if (supabaseService.isAvailable()) {
+        try {
+          isCloudActive = await supabaseService.verifyConnection();
+        } catch {
+          isCloudActive = false;
+        }
+      }
+
+      if (isCloudActive) {
+        setIsSupabaseConnected(true);
+        const cloudSubjects = await supabaseService.fetchSubjects();
+        const cloudTasks = await supabaseService.fetchTasks();
+        const cloudTimetable = await supabaseService.fetchTimetableSlots();
+        const cloudExams = await supabaseService.fetchExams();
+        const cloudGoals = await supabaseService.fetchGoals();
+        const cloudNotes = await supabaseService.fetchNotes();
+        const cloudResources = await supabaseService.fetchResources();
+        const cloudRevision = await supabaseService.fetchRevisionTopics();
+        const cloudAnnouncements = await supabaseService.fetchAnnouncements();
+        const cloudDailyPlans = await supabaseService.fetchDailyPlans();
+        const cloudFocus = await supabaseService.fetchFocusSessions();
+
+        if (isAdmin && cloudSubjects?.length === 0) {
+          for (const item of INITIAL_SUBJECTS) await supabaseService.upsertSubject(item);
+        }
+        if (isAdmin && cloudTasks?.length === 0) {
+          for (const item of INITIAL_TASKS) await supabaseService.upsertTask(item);
+        }
+        if (isAdmin && cloudTimetable?.length === 0) {
+          for (const item of INITIAL_TIMETABLE_SLOTS) await supabaseService.upsertTimetableSlot(item);
+        }
+
+        if (!active) return;
+        if (cloudSubjects !== null) setSubjects(cloudSubjects.length === 0 && isAdmin ? INITIAL_SUBJECTS : cloudSubjects);
+        if (cloudTasks !== null) setTasks(cloudTasks.length === 0 && isAdmin ? INITIAL_TASKS : cloudTasks);
+        if (cloudTimetable !== null) setTimetableSlots(cloudTimetable.length === 0 && isAdmin ? INITIAL_TIMETABLE_SLOTS : cloudTimetable);
+        setExams(cloudExams);
+        setGoals(cloudGoals);
+        setNotes(cloudNotes);
+        setResources(cloudResources);
+        setRevisionTopics(cloudRevision);
+        if (cloudAnnouncements !== null) setAnnouncements(cloudAnnouncements);
+        setDailyPlans(cloudDailyPlans);
+        setFocusSessions(cloudFocus);
+
+        const refresh = <T,>(promise: Promise<T>, setter: (value: T) => void) => {
+          promise.then(value => { if (active) setter(value); }).catch(error => console.warn('Realtime refresh failed:', error));
+        };
+        unsubscribers.push(
+          supabaseService.subscribeToChanges('tasks', () => refresh(supabaseService.fetchTasks(), setTasks)),
+          supabaseService.subscribeToChanges('subjects', () => refresh(supabaseService.fetchSubjects().then(v => v || []), setSubjects)),
+          supabaseService.subscribeToChanges('timetable_slots', () => refresh(supabaseService.fetchTimetableSlots().then(v => v || []), setTimetableSlots)),
+          supabaseService.subscribeToChanges('exams', () => refresh(supabaseService.fetchExams(), setExams)),
+          supabaseService.subscribeToChanges('goals', () => refresh(supabaseService.fetchGoals(), setGoals)),
+          supabaseService.subscribeToChanges('notes', () => refresh(supabaseService.fetchNotes(), setNotes)),
+          supabaseService.subscribeToChanges('resources', () => refresh(supabaseService.fetchResources(), setResources)),
+          supabaseService.subscribeToChanges('revision_topics', () => refresh(supabaseService.fetchRevisionTopics(), setRevisionTopics)),
+          supabaseService.subscribeToChanges('announcements', () => refresh(supabaseService.fetchAnnouncements().then(v => v || []), setAnnouncements)),
+          supabaseService.subscribeToChanges('daily_plans', () => refresh(supabaseService.fetchDailyPlans(), setDailyPlans)),
+          supabaseService.subscribeToChanges('focus_sessions', () => refresh(supabaseService.fetchFocusSessions(), setFocusSessions))
+        );
+      } else {
+        setIsSupabaseConnected(false);
+        await fetchLocalData();
+        const pollInterval = setInterval(() => {
+          if (active) fetchLocalData();
+        }, 5000);
+        unsubscribers.push(() => clearInterval(pollInterval));
+      }
+    };
+
+    syncCloudData().catch(() => {
+      if (active) {
+        setIsSupabaseConnected(false);
+        fetchLocalData();
+      }
     });
 
     return () => {
@@ -811,13 +917,19 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setNotifications(prev => [newNotif, ...prev]);
 
-    // Try to post to server (non-blocking)
+    // Try to post to server
     try {
-      await fetch('/api/tasks', {
+      const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTask)
       });
+      if (res.ok) {
+        const resJson = await res.json();
+        if (resJson.task) {
+          setTasks(prev => prev.map(t => (t.id === newTask.id ? { ...newTask, ...resJson.task } : t)));
+        }
+      }
     } catch {}
 
     triggerWebsiteNotification({

@@ -63,12 +63,43 @@ app.get('/api/config/supabase', (req, res) => {
   res.json({ url, anonKey });
 });
 
+function normalizeSupabaseUrl(rawUrl: string): string {
+  if (!rawUrl) return '';
+  let url = rawUrl.trim();
+  const dashMatch = url.match(/supabase\.com\/dashboard\/project\/([a-z0-9_-]+)/i);
+  if (dashMatch) return `https://${dashMatch[1]}.supabase.co`;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = `https://${url}`;
+  }
+  try {
+    const u = new URL(url);
+    if (u.hostname.endsWith('supabase.co')) {
+      return `https://${u.host}`;
+    }
+    const cleanPath = u.pathname.replace(/\/(rest|auth|storage)\/v1\/?$/i, '').replace(/\/+$/, '');
+    return `${u.origin}${cleanPath}`;
+  } catch {
+    return url.replace(/\/+$/, '');
+  }
+}
+
+// Serve SQL schema directly
+app.get('/supabase_schema.sql', (req, res) => {
+  const schemaPath = path.join(process.cwd(), 'supabase_schema.sql');
+  if (fs.existsSync(schemaPath)) {
+    res.setHeader('Content-Type', 'text/plain');
+    res.sendFile(schemaPath);
+  } else {
+    res.status(404).send('-- Schema file not found');
+  }
+});
+
 app.post('/api/config/supabase', (req, res) => {
   const { url, anonKey } = req.body;
   if (!url || !anonKey) {
     return res.status(400).json({ error: 'Supabase URL and Anon Key are required' });
   }
-  const cleanUrl = String(url).trim();
+  const cleanUrl = normalizeSupabaseUrl(String(url));
   const cleanKey = String(anonKey).trim();
 
   try {

@@ -136,7 +136,9 @@ export const supabaseService = {
     }
     try {
       const { error } = await client.from('subjects').select('id').limit(1);
-      if (error && (error.message?.includes('fetch failed') || error.code === 'PGRST301' || error.message?.includes('Failed to fetch') || error.message?.includes('ENOTFOUND'))) {
+      if (error) {
+        // Any PostgREST error (PGRST125 invalid path, missing table, auth error)
+        // indicates Supabase cloud tables are not ready or URL path is invalid
         isCloudReachable = false;
         return false;
       }
@@ -740,7 +742,11 @@ export const supabaseService = {
     });
 
     if (authError) {
-      return { success: false, error: authError.message };
+      let friendlyError = authError.message;
+      if (authError.message?.includes('Invalid path specified in request URL') || (authError as any).code === 'PGRST125') {
+        friendlyError = 'Supabase Cloud API endpoint is misconfigured or tables are not initialized.';
+      }
+      return { success: false, error: friendlyError };
     }
 
     const authUser = authData.user;

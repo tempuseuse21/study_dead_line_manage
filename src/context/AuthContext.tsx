@@ -89,18 +89,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (isCloudLive) {
-      const cloudRes = await supabaseService.loginWithSupabase(cleanInput, passwordInput);
-      if (cloudRes.success && cloudRes.user) {
-        setUser(cloudRes.user);
-        localStorage.setItem('mscit_current_student', JSON.stringify(cloudRes.user));
-        if (cloudRes.user.role === 'cr_admin') {
-          localStorage.setItem('studysync_is_admin', 'true');
+      try {
+        const cloudRes = await supabaseService.loginWithSupabase(cleanInput, passwordInput);
+        if (cloudRes.success && cloudRes.user) {
+          setUser(cloudRes.user);
+          localStorage.setItem('mscit_current_student', JSON.stringify(cloudRes.user));
+          if (cloudRes.user.role === 'cr_admin') {
+            localStorage.setItem('studysync_is_admin', 'true');
+          }
+          setShowAuthModal(false);
+          return { success: true };
         }
-        setShowAuthModal(false);
-        return { success: true };
-      }
-      if (cloudRes.error) {
-        return { success: false, error: cloudRes.error };
+        // If duplicate name validation error, return immediately
+        if (cloudRes.error && cloudRes.error.includes('Multiple students have the name')) {
+          return { success: false, error: cloudRes.error };
+        }
+      } catch (err) {
+        console.warn('Supabase cloud login error, proceeding to central fallback:', err);
       }
     }
 
@@ -160,20 +165,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (isCloudLive) {
-      const cloudRes = await supabaseService.registerWithSupabase({
-        studentId: input.studentId.trim(),
-        fullName: input.fullName.trim(),
-        password: input.password,
-        registrationCode: input.registrationCode.trim()
-      });
-      if (cloudRes.success && cloudRes.user) {
-        setUser(cloudRes.user);
-        localStorage.setItem('mscit_current_student', JSON.stringify(cloudRes.user));
-        setShowAuthModal(false);
-        return { success: true };
-      }
-      if (cloudRes.error) {
-        return { success: false, error: cloudRes.error };
+      try {
+        const cloudRes = await supabaseService.registerWithSupabase({
+          studentId: input.studentId.trim(),
+          fullName: input.fullName.trim(),
+          password: input.password,
+          registrationCode: input.registrationCode.trim()
+        });
+        if (cloudRes.success && cloudRes.user) {
+          try {
+            await fetch('/api/auth/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                studentId: input.studentId.trim(),
+                fullName: input.fullName.trim(),
+                registrationCode: input.registrationCode.trim(),
+                password: input.password
+              })
+            });
+          } catch {}
+
+          setUser(cloudRes.user);
+          localStorage.setItem('mscit_current_student', JSON.stringify(cloudRes.user));
+          setShowAuthModal(false);
+          return { success: true };
+        }
+        if (cloudRes.error && !cloudRes.error.includes('Invalid path') && !cloudRes.error.includes('misconfigured')) {
+          return { success: false, error: cloudRes.error };
+        }
+      } catch (err) {
+        console.warn('Supabase registration error, falling back to central DB:', err);
       }
     }
 

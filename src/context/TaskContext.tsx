@@ -230,7 +230,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const targetProf = getNormalizedProf(s.code, s.name, s.id);
         if (targetProf) {
           const updated = { ...s, teacherName: targetProf, professor: targetProf };
-          if (supabaseService.isAvailable()) supabaseService.upsertSubject(updated);
+          if (isAdmin && supabaseService.isAvailable()) supabaseService.upsertSubject(updated);
           return updated;
         }
         return s;
@@ -242,13 +242,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const targetProf = getNormalizedProf(slot.subjectCode, slot.subjectName, slot.subjectId);
         if (targetProf) {
           const updated = { ...slot, professor: targetProf };
-          if (supabaseService.isAvailable()) supabaseService.upsertTimetableSlot(updated);
+          if (isAdmin && supabaseService.isAvailable()) supabaseService.upsertTimetableSlot(updated);
           return updated;
         }
         return slot;
       })
     );
-  }, []);
+  }, [isAdmin]);
 
   // ---- State ----
   const [isSupabaseConnected, setIsSupabaseConnected] = useState<boolean>(false);
